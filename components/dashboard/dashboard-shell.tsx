@@ -9,11 +9,13 @@ import {
   LayoutDashboard,
   LogOut,
   Moon,
+  MoreHorizontal,
   Package,
   Receipt,
   Settings,
   ShoppingCart,
   Sun,
+  X,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
@@ -81,6 +83,7 @@ export function DashboardShell({
   const [loggingOut, setLoggingOut] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("");
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
 
   const supabase = createClient();
 
@@ -317,12 +320,12 @@ export function DashboardShell({
               aria-label="Cloud Stock"
             >
               <img
-                src="/cloud-stock-logo.png"
+                src="/cloud-stock-logo.PNG"
                 alt="Cloud Stock"
                 className="h-9 w-9 rounded-xl object-contain"
               />
 
-              <span className="text-base font-bold tracking-tight text-slate-950 dark:text-slate-50">
+              <span className="text-base font-bold tracking-tight text-[#0f172a] dark:text-white">
                 Cloud Stock
               </span>
             </Link>
@@ -402,7 +405,6 @@ export function DashboardShell({
               { name: "Inventory", href: "/inventory", icon: Boxes },
               { name: "Penjualan", href: "/sales", icon: ShoppingCart },
               { name: "Laporan", href: "/reports", icon: Receipt },
-              { name: "Lainnya", href: "/settings", icon: Settings },
             ].map((item) => {
               const Icon = item.icon;
               const active =
@@ -428,8 +430,94 @@ export function DashboardShell({
                 </Link>
               );
             })}
+
+            <button
+              type="button"
+              onClick={() => setMobileMoreOpen(true)}
+              className={`flex min-w-0 flex-col items-center justify-center rounded-xl px-1 py-2 transition ${
+                pathname.startsWith("/products") ||
+                pathname.startsWith("/bom") ||
+                pathname.startsWith("/settings")
+                  ? "bg-slate-900 text-white dark:bg-slate-800 dark:text-white"
+                  : "text-slate-400 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+              }`}
+              aria-label="Buka menu lainnya"
+            >
+              <MoreHorizontal size={19} strokeWidth={1.9} />
+              <span className="mt-1 truncate text-[10px] font-semibold">
+                Lainnya
+              </span>
+            </button>
           </div>
         </nav>
+
+        {/* =================================================
+            MOBILE MORE MENU
+            Produk, BOM / Resep, dan Pengaturan.
+        ================================================== */}
+        {mobileMoreOpen && (
+          <>
+            <button
+              type="button"
+              aria-label="Tutup menu lainnya"
+              onClick={() => setMobileMoreOpen(false)}
+              className="fixed inset-0 z-[70] bg-slate-950/40 backdrop-blur-sm lg:hidden"
+            />
+
+            <div className="fixed inset-x-0 bottom-0 z-[80] rounded-t-[28px] border-t border-slate-200 bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-16px_40px_rgba(15,23,42,0.18)] dark:border-slate-800 dark:bg-slate-950 lg:hidden">
+              <div className="mx-auto mb-4 h-1.5 w-11 rounded-full bg-slate-200 dark:bg-slate-700" />
+
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-base font-bold text-slate-950 dark:text-white">
+                    Lainnya
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    Menu Cloud Stock
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setMobileMoreOpen(false)}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  aria-label="Tutup menu"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                {[
+                  { name: "Produk", href: "/products", icon: Package },
+                  { name: "BOM / Resep", href: "/bom", icon: FileBarChart },
+                  { name: "Pengaturan", href: "/settings", icon: Settings },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const active =
+                    pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`);
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMoreOpen(false)}
+                      className={`flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border p-3 text-center transition ${
+                        active
+                          ? "border-slate-900 bg-slate-900 text-white dark:border-slate-700 dark:bg-slate-800"
+                          : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <Icon size={22} strokeWidth={1.9} />
+                      <span className="text-xs font-semibold">{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
