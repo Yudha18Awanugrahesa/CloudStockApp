@@ -88,6 +88,30 @@ export function DashboardShell({
   const supabase = createClient();
 
   useEffect(() => {
+    const prefetchRoutes = ["/dashboard", "/inventory", "/sales", "/reports"];
+
+    const prefetch = () => {
+      prefetchRoutes.forEach((href) => router.prefetch(href));
+    };
+
+    const idleWindow = window as typeof window & {
+      requestIdleCallback?: (callback: () => void) => number;
+    };
+
+    if (idleWindow.requestIdleCallback) {
+      const id = idleWindow.requestIdleCallback(prefetch);
+      return () => {
+        if (typeof window.cancelIdleCallback === "function") {
+          window.cancelIdleCallback(id);
+        }
+      };
+    }
+
+    const id = window.setTimeout(prefetch, 800);
+    return () => window.clearTimeout(id);
+  }, [router]);
+
+  useEffect(() => {
     const savedTheme = window.localStorage.getItem("cloud-stock-theme");
 
     const nextTheme =
@@ -463,7 +487,12 @@ export function DashboardShell({
 
               <button
                 type="button"
-                onClick={() => setMobileMoreOpen(true)}
+                onClick={() => {
+                  setMobileMoreOpen(true);
+                  ["/products", "/bom", "/settings"].forEach((href) =>
+                    router.prefetch(href),
+                  );
+                }}
                 className={`flex min-w-0 flex-col items-center justify-center rounded-xl px-1 py-2 transition ${
                   pathname.startsWith("/products") ||
                   pathname.startsWith("/bom") ||
