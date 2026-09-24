@@ -110,6 +110,15 @@ export function DashboardShell({
   }
 
   useEffect(() => {
+    const savedWorkspaceName = window.localStorage.getItem(
+      "cloud-stock-workspace-name",
+    );
+
+    if (savedWorkspaceName?.trim()) {
+      setWorkspaceName(savedWorkspaceName);
+      return;
+    }
+
     async function loadWorkspaceName() {
       try {
         const {
@@ -143,14 +152,19 @@ export function DashboardShell({
           return;
         }
 
-        setWorkspaceName(workspace.name);
+        const name = workspace?.name?.trim();
+
+        if (!name) return;
+
+        setWorkspaceName(name);
+        window.localStorage.setItem("cloud-stock-workspace-name", name);
       } catch (error) {
         console.error("Gagal memuat workspace:", error);
       }
     }
 
-    loadWorkspaceName();
-  }, [supabase]);
+    void loadWorkspaceName();
+  }, []);
 
   async function handleLogout() {
     setLoggingOut(true);
