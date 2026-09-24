@@ -1,0 +1,414 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================
+   CLOUD STOCK
+   GLOBAL STYLES + LIGHT / DARK MODE
+========================================================== */
+
+/* ==========================================================
+   BASE
+========================================================== */
+
+html {
+  color-scheme: light;
+  background: #f8fafc;
+}
+
+html.dark {
+  color-scheme: dark;
+  background: #020617;
+}
+
+body {
+  margin: 0;
+  background: #f8fafc;
+  color: #0f172a;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+html.dark body {
+  background: #020617;
+  color: #e2e8f0;
+}
+
+/* ==========================================================
+   SCROLLBAR
+========================================================== */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+html.dark * {
+  scrollbar-color: #334155 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+html.dark *::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+html.dark *::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* ==========================================================
+   SELECTION
+========================================================== */
+
+::selection {
+  background: #cbd5e1;
+  color: #0f172a;
+}
+
+html.dark ::selection {
+  background: #334155;
+  color: #f8fafc;
+}
+
+/* ==========================================================
+   DARK MODE — PAGE BACKGROUND
+========================================================== */
+
+html.dark .bg-slate-50 {
+  background-color: #020617 !important;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #0f172a !important;
+}
+
+html.dark .bg-white {
+  background-color: #0f172a !important;
+}
+
+/* Jangan mengubah bg-slate-950.
+   Warna ini digunakan sebagai primary dark surface. */
+
+/* ==========================================================
+   DARK MODE — TEXT
+========================================================== */
+
+html.dark .text-slate-950,
+html.dark .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-800 {
+  color: #e2e8f0 !important;
+}
+
+html.dark .text-slate-700 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+html.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* ==========================================================
+   DARK MODE — BORDERS
+========================================================== */
+
+html.dark .border-slate-100 {
+  border-color: #1e293b !important;
+}
+
+html.dark .border-slate-200 {
+  border-color: #1e293b !important;
+}
+
+html.dark .border-slate-300 {
+  border-color: #334155 !important;
+}
+
+/* ==========================================================
+   DARK MODE — DIVIDERS
+========================================================== */
+
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b !important;
+}
+
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155 !important;
+}
+
+/* ==========================================================
+   DARK MODE — MUTED PANELS
+========================================================== */
+
+html.dark .bg-slate-50\/50 {
+  background-color: rgb(15 23 42 / 0.5) !important;
+}
+
+html.dark .bg-slate-50\/70 {
+  background-color: rgb(15 23 42 / 0.7) !important;
+}
+
+html.dark .bg-white\/50 {
+  background-color: rgb(15 23 42 / 0.5) !important;
+}
+
+html.dark .bg-white\/70 {
+  background-color: rgb(15 23 42 / 0.7) !important;
+}
+
+html.dark .bg-white\/90 {
+  background-color: rgb(15 23 42 / 0.9) !important;
+}
+
+html.dark .bg-white\/95 {
+  background-color: rgb(15 23 42 / 0.95) !important;
+}
+
+/* ==========================================================
+   DARK MODE — HOVER
+========================================================== */
+
+html.dark .hover\:bg-slate-50:hover {
+  background-color: #1e293b !important;
+}
+
+html.dark .hover\:bg-slate-100:hover {
+  background-color: #1e293b !important;
+}
+
+html.dark .hover\:bg-slate-200:hover {
+  background-color: #334155 !important;
+}
+
+html.dark .hover\:bg-slate-800:hover {
+  background-color: #1e293b !important;
+}
+
+/* ==========================================================
+   DARK MODE — FORM
+========================================================== */
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  border-color: #64748b;
+  outline-color: #64748b;
+}
+
+html.dark option {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+/* ==========================================================
+   DARK MODE — CARDS
+========================================================== */
+
+html.dark .shadow-sm {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.25),
+    0 8px 24px rgb(0 0 0 / 0.12) !important;
+}
+
+/* ==========================================================
+   MOBILE TOPBAR
+   Tidak mengubah struktur/layout.
+   Hanya warna ketika Dark Mode aktif.
+========================================================== */
+
+html.dark .cloud-stock-mobile-topbar {
+  background-color: rgb(2 6 23 / 0.96) !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+html.dark .cloud-stock-mobile-topbar .text-slate-950 {
+  color: #f8fafc !important;
+}
+
+html.dark .cloud-stock-mobile-topbar .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark .cloud-stock-mobile-topbar button {
+  background-color: #0f172a;
+  border-color: #1e293b;
+  color: #cbd5e1;
+}
+
+html.dark .cloud-stock-mobile-topbar button:hover {
+  background-color: #1e293b;
+}
+
+/* ==========================================================
+   MOBILE BOTTOM NAVIGATION
+========================================================== */
+
+html.dark .cloud-stock-mobile-bottom-nav {
+  background-color: rgb(2 6 23 / 0.97) !important;
+  border-color: #1e293b !important;
+}
+
+html.dark .cloud-stock-mobile-bottom-nav a {
+  color: #94a3b8;
+}
+
+html.dark .cloud-stock-mobile-bottom-nav a:hover {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+/* Active bottom navigation */
+
+html.dark .cloud-stock-mobile-bottom-nav a.bg-slate-950,
+html.dark .cloud-stock-mobile-bottom-nav a.bg-slate-900 {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+/* ==========================================================
+   TOAST
+========================================================== */
+
+html.dark [data-sonner-toaster],
+html.dark [data-sonner-toast] {
+  color-scheme: dark;
+}
+
+/* ==========================================================
+   DIALOG / MODAL
+========================================================== */
+
+html.dark [role="dialog"] {
+  color: #e2e8f0;
+}
+
+html.dark [role="dialog"] .bg-white {
+  background-color: #0f172a !important;
+}
+
+/* ==========================================================
+   TABLE
+========================================================== */
+
+html.dark table {
+  color: #e2e8f0;
+}
+
+html.dark thead {
+  color: #94a3b8;
+}
+
+html.dark tbody tr {
+  border-color: #1e293b;
+}
+
+html.dark tbody tr:hover {
+  background-color: #0f172a;
+}
+
+/* ==========================================================
+   LINKS
+========================================================== */
+
+html.dark a {
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
+}
+
+/* ==========================================================
+   DISABLED
+========================================================== */
+
+html.dark button:disabled,
+html.dark input:disabled,
+html.dark select:disabled,
+html.dark textarea:disabled {
+  opacity: 0.55;
+}
+
+/* ==========================================================
+   SMOOTH THEME TRANSITION
+========================================================== */
+
+html.dark body,
+html.dark main,
+html.dark header,
+html.dark aside,
+html.dark section,
+html.dark article,
+html.dark nav,
+html.dark footer,
+html.dark [role="dialog"] {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+}
+
+/* ==========================================================
+   MOBILE SAFE AREA
+========================================================== */
+
+@media (max-width: 1023px) {
+  .cloud-stock-mobile-bottom-nav {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* ==========================================================
+   REDUCE MOTION
+========================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
