@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
   ChevronDown,
@@ -8,6 +9,7 @@ import {
   Minus,
   Package,
   Plus,
+  RotateCcw,
   Search,
   ShoppingCart,
   Trash2,
@@ -87,6 +89,7 @@ export function SalesClient({
   workspaceId,
 }: SalesClientProps) {
   const supabase = createClient();
+  const router = useRouter();
 
   // ==========================================================
   // STATE
@@ -94,7 +97,7 @@ export function SalesClient({
 
   const [products] = useState<Product[]>(initialProducts);
 
-  const [sales] = useState<Sale[]>(initialSales);
+  const sales = initialSales;
 
   const [search, setSearch] = useState("");
 
@@ -113,6 +116,10 @@ export function SalesClient({
   const [successMessage, setSuccessMessage] = useState("");
 
   const [errorMessage, setErrorMessage] = useState("");
+
+  const [cancelTarget, setCancelTarget] = useState<Sale | null>(null);
+
+  const [cancelingSaleId, setCancelingSaleId] = useState<string | null>(null);
 
   // ==========================================================
   // CATEGORY
@@ -366,6 +373,77 @@ export function SalesClient({
   }
 
   // ==========================================================
+  // CANCEL SALE
+  // ==========================================================
+
+  function getCancelSaleErrorMessage(error: unknown) {
+    const value = error as {
+      message?: unknown;
+      details?: unknown;
+    } | null;
+
+    const message =
+      typeof value?.message === "string" ? value.message.trim() : "";
+
+    const details =
+      typeof value?.details === "string" ? value.details.trim() : "";
+
+    if (message) return message;
+    if (details) return details;
+
+    if (error instanceof Error && error.message.trim()) {
+      return error.message.trim();
+    }
+
+    return "Transaksi gagal dibatalkan.";
+  }
+
+  async function handleCancelSale() {
+    if (!cancelTarget || cancelingSaleId) return;
+
+    const saleId = cancelTarget.id;
+
+    setCancelingSaleId(saleId);
+
+    try {
+      const { data, error } = await supabase.rpc("cancel_sale", {
+        p_sale_id: saleId,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const restoredMaterials = Number(data?.restored_materials ?? 0);
+
+      setCancelTarget(null);
+
+      showToast({
+        type: "success",
+        title: "Transaksi dibatalkan",
+        message:
+          restoredMaterials > 0
+            ? `Stok ${restoredMaterials} bahan baku telah dikembalikan.`
+            : "Status transaksi telah diperbarui.",
+        duration: 6000,
+      });
+
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+
+      showToast({
+        type: "error",
+        title: "Gagal membatalkan transaksi",
+        message: getCancelSaleErrorMessage(error),
+        duration: 7000,
+      });
+    } finally {
+      setCancelingSaleId(null);
+    }
+  }
+
+  // ==========================================================
   // FORMAT DATE
   // ==========================================================
 
@@ -494,7 +572,7 @@ export function SalesClient({
              PRODUCT GRID
           ================================================== */
 
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredProducts.map((product) => {
               const cartItem = cart.find(
                 (item) => item.product.id === product.id,
@@ -643,11 +721,34 @@ export function SalesClient({
                       </td>
 
                       <td className="px-5 py-4 text-right">
-                        <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                          {sale.status === "completed"
-                            ? "Selesai"
-                            : sale.status}
-                        </span>
+                        <div className="flex items-center justify-end gap-2">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                              sale.status === "completed"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {sale.status === "completed"
+                              ? "Selesai"
+                              : sale.status === "cancelled"
+                                ? "Dibatalkan"
+                                : sale.status}
+                          </span>
+
+                          {sale.status === "completed" && (
+                            <button
+                              type="button"
+                              onClick={() => setCancelTarget(sale)}
+                              disabled={cancelingSaleId === sale.id}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              title="Batalkan transaksi"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5" />
+                              Batalkan
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -676,8 +777,18 @@ export function SalesClient({
                       </p>
                     </div>
 
-                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                      {sale.status === "completed" ? "Selesai" : sale.status}
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                        sale.status === "completed"
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {sale.status === "completed"
+                        ? "Selesai"
+                        : sale.status === "cancelled"
+                          ? "Dibatalkan"
+                          : sale.status}
                     </span>
                   </div>
 
@@ -696,12 +807,112 @@ export function SalesClient({
                       {formatRupiah(Number(sale.total_amount))}
                     </p>
                   </div>
+
+                  {sale.status === "completed" && (
+                    <button
+                      type="button"
+                      onClick={() => setCancelTarget(sale)}
+                      disabled={cancelingSaleId === sale.id}
+                      className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Batalkan Transaksi
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           </>
         )}
       </div>
+
+      {/* =====================================================
+          CANCEL SALE MODAL
+      ====================================================== */}
+
+      {cancelTarget &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[9998] bg-slate-950/45 backdrop-blur-sm"
+              aria-hidden="true"
+              onClick={() => {
+                if (!cancelingSaleId) setCancelTarget(null);
+              }}
+            />
+
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+              <div
+                className="w-full max-w-md rounded-3xl border border-slate-200 bg-white shadow-2xl"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="p-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                    <RotateCcw className="h-6 w-6" />
+                  </div>
+
+                  <h2 className="mt-4 text-lg font-bold text-slate-950">
+                    Batalkan transaksi?
+                  </h2>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Transaksi{" "}
+                    <span className="font-semibold text-slate-700">
+                      {cancelTarget.invoice_number}
+                    </span>{" "}
+                    akan berstatus{" "}
+                    <span className="font-semibold text-slate-700">
+                      Dibatalkan
+                    </span>
+                    . Stok bahan baku akan dikembalikan dan riwayat transaksi
+                    tetap tersimpan.
+                  </p>
+
+                  <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-slate-500">Total transaksi</span>
+                      <span className="font-bold text-slate-900">
+                        {formatRupiah(Number(cancelTarget.total_amount))}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setCancelTarget(null)}
+                      disabled={Boolean(cancelingSaleId)}
+                      className="h-11 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      Jangan Batalkan
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleCancelSale}
+                      disabled={Boolean(cancelingSaleId)}
+                      className="flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {cancelingSaleId ? (
+                        <>
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          Memproses...
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="h-4 w-4" />
+                          Ya, Batalkan
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>,
+          document.body,
+        )}
 
       {/* =====================================================
           CART MODAL
