@@ -43,3 +43,7 @@ next-env.d.ts
 
 # Misc
 *.log
+# Local database backups
+backups/
+
+supabase/.temp/
