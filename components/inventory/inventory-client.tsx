@@ -526,9 +526,13 @@ export function InventoryClient({
       )}
 
       {/* =========================================================
-          HEADER
+          INVENTORY HEADER
+          Mobile: pertahankan layout sebelumnya.
+          Desktop: gunakan layout baru.
       ========================================================= */}
-      <div className="mb-6 flex items-start justify-between gap-3 sm:items-end">
+
+      {/* MOBILE HEADER — TIDAK DIUBAH */}
+      <div className="mb-6 flex items-start justify-between gap-3 sm:items-end md:hidden">
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-2.5">
             <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 sm:flex">
@@ -548,7 +552,7 @@ export function InventoryClient({
           </div>
         </div>
 
-        {/* ACTION BUTTONS */}
+        {/* ACTION BUTTONS MOBILE — TIDAK DIUBAH */}
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
@@ -574,19 +578,97 @@ export function InventoryClient({
         </div>
       </div>
 
+      {/* DESKTOP HEADER — PERUBAHAN KHUSUS DESKTOP */}
+      <div className="mb-6 hidden md:block">
+        <div className="flex items-end justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold tracking-tight text-slate-950">
+              Stock Overview
+            </h2>
+
+            <p className="mt-1 text-sm leading-5 text-slate-500">
+              Pantau stok bahan baku dan lakukan restock dengan cepat.
+            </p>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => router.push("/inventory/movements")}
+              title="Lihat Movement"
+              aria-label="Lihat Movement"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
+            >
+              <History size={17} />
+              <span>Movement</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={openCreateModal}
+              title="Tambah Bahan"
+              aria-label="Tambah Bahan"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+            >
+              <Plus size={18} />
+              <span>Tambah Bahan</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* =========================================================
           STOCK OVERVIEW
+          Mobile: pertahankan layout sebelumnya.
+          Desktop: label "Stock Overview" tetap disembunyikan karena
+          sudah digantikan oleh "Kondisi persediaan" di header desktop.
       ========================================================= */}
-      <div className="mb-6">
+
+      {/* MOBILE STOCK OVERVIEW — TIDAK DIUBAH */}
+      <div className="mb-6 md:hidden">
         <div className="mb-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Stock Overview
-          </p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"></p>
           <h2 className="mt-1 text-base font-semibold text-slate-950">
             Kondisi persediaan
           </h2>
         </div>
 
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <SummaryCard
+            label="Total Bahan"
+            value={totalItems}
+            description="Bahan aktif"
+            icon={<Package size={18} />}
+          />
+
+          <SummaryCard
+            label="Stok Aman"
+            value={safeItems}
+            description="Di atas reorder point"
+            icon={<CheckCircle2 size={18} />}
+            safe
+          />
+
+          <SummaryCard
+            label="Perlu Dicek"
+            value={lowStockItems}
+            description="Reorder / kritis"
+            icon={<AlertTriangle size={18} />}
+            warning
+          />
+
+          <SummaryCard
+            label="Stok Habis"
+            value={outOfStockItems}
+            description="Perlu restock"
+            icon={<XCircle size={18} />}
+            danger
+          />
+        </div>
+      </div>
+
+      {/* DESKTOP SUMMARY CARDS */}
+      <div className="mb-6 hidden md:block">
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <SummaryCard
             label="Total Bahan"

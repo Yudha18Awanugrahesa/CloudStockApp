@@ -8,8 +8,11 @@ import {
   FileBarChart,
   LayoutDashboard,
   LogOut,
+  Menu,
   Moon,
   MoreHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
   Package,
   Receipt,
   Settings,
@@ -23,7 +26,7 @@ import { createClient } from "@/lib/supabase/client";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ToastViewport } from "@/components/ui/toast-viewport";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const navigation = [
   {
@@ -84,11 +87,22 @@ export function DashboardShell({
   const [workspaceName, setWorkspaceName] = useState("");
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
+  const workspaceMenuRef = useRef<HTMLDivElement>(null);
 
   const supabase = createClient();
 
   useEffect(() => {
-    const prefetchRoutes = ["/dashboard", "/inventory", "/sales", "/reports"];
+    const prefetchRoutes = [
+      "/dashboard",
+      "/inventory",
+      "/products",
+      "/bom",
+      "/sales",
+      "/reports",
+      "/settings",
+    ];
 
     const prefetch = () => {
       prefetchRoutes.forEach((href) => router.prefetch(href));
@@ -112,6 +126,23 @@ export function DashboardShell({
   }, [router]);
 
   useEffect(() => {
+    const savedSidebar = window.localStorage.getItem(
+      "cloud-stock-sidebar-collapsed",
+    );
+
+    if (savedSidebar === "true") {
+      setSidebarCollapsed(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      "cloud-stock-sidebar-collapsed",
+      String(sidebarCollapsed),
+    );
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
     const savedTheme = window.localStorage.getItem("cloud-stock-theme");
 
     const nextTheme =
@@ -132,6 +163,40 @@ export function DashboardShell({
     window.localStorage.setItem("cloud-stock-theme", nextTheme);
     document.documentElement.classList.toggle("dark", nextTheme === "dark");
   }
+
+  useEffect(() => {
+    setWorkspaceMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!workspaceMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node | null;
+
+      if (
+        target &&
+        workspaceMenuRef.current &&
+        !workspaceMenuRef.current.contains(target)
+      ) {
+        setWorkspaceMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setWorkspaceMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [workspaceMenuOpen]);
 
   useEffect(() => {
     const savedWorkspaceName = window.localStorage.getItem(
@@ -238,31 +303,67 @@ export function DashboardShell({
         {/* =====================================================
           SIDEBAR
       ====================================================== */}
-        <aside className="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
-          {/* Logo */}
-          <div className="flex h-20 items-center justify-between border-b border-slate-100 px-5">
-            <Link href="/dashboard" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-sm font-bold text-white">
-                CS
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 hidden flex-col border-r border-slate-200 bg-white transition-[width] duration-300 ease-in-out dark:border-slate-800 dark:bg-slate-950 lg:flex ${
+            sidebarCollapsed ? "w-[76px]" : "w-64"
+          }`}
+        >
+          {/* Logo + Sidebar Toggle */}
+          <div
+            className={`flex h-20 items-center border-b border-slate-100 dark:border-slate-800 ${
+              sidebarCollapsed ? "justify-center px-3" : "justify-between px-5"
+            }`}
+          >
+            <Link
+              href="/dashboard"
+              className="flex min-w-0 items-center gap-3"
+              aria-label="Cloud Stock"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:ring-blue-500/20">
+                <img
+                  src="/cloud-stock-logo.PNG"
+                  alt="Cloud Stock"
+                  className="h-7 w-7 object-contain"
+                />
               </div>
 
-              <div>
-                <p className="cloud-stock-brand-name font-bold tracking-tight">
-                  Cloud Stock
-                </p>
+              {!sidebarCollapsed && (
+                <div className="min-w-0">
+                  <p className="cloud-stock-brand-name truncate font-bold tracking-tight">
+                    Cloud Stock
+                  </p>
 
-                <p className="text-xs text-slate-400">Inventory & POS</p>
-              </div>
+                  <p className="text-[11px] font-medium text-slate-400">
+                    Inventory Management
+                  </p>
+                </div>
+              )}
             </Link>
+
+            {!sidebarCollapsed && (
+              <button
+                type="button"
+                onClick={() => setSidebarCollapsed(true)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                aria-label="Ciutkan sidebar"
+                title="Ciutkan sidebar"
+              >
+                <PanelLeftClose size={17} strokeWidth={1.9} />
+              </button>
+            )}
           </div>
 
           {/* =====================================================
             NAVIGATION
         ====================================================== */}
-          <div className="flex-1 overflow-y-auto px-3 py-5">
-            <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Workspace
-            </p>
+          <div
+            className={`${sidebarCollapsed ? "px-2" : "px-3"} flex-1 overflow-y-auto py-5`}
+          >
+            {!sidebarCollapsed && (
+              <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                Workspace
+              </p>
+            )}
 
             <nav className="space-y-1">
               {navigation.map((item) => {
@@ -277,23 +378,33 @@ export function DashboardShell({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                    className={`group relative flex items-center rounded-xl py-2.5 text-sm font-medium transition ${
+                      sidebarCollapsed ? "justify-center px-0" : "gap-3 px-3"
+                    } ${
                       active
-                        ? "bg-slate-950 text-white shadow-sm"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                        ? "bg-blue-50 text-blue-700 shadow-sm dark:bg-blue-500/10 dark:text-blue-400"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                     }`}
                   >
                     <Icon size={18} strokeWidth={1.9} />
 
-                    <span>{item.name}</span>
+                    {!sidebarCollapsed && <span>{item.name}</span>}
+
+                    {sidebarCollapsed && (
+                      <span className="pointer-events-none absolute left-[calc(100%+10px)] z-[100] hidden whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900">
+                        {item.name}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
             </nav>
 
-            <p className="mb-3 mt-8 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Sistem
-            </p>
+            {!sidebarCollapsed && (
+              <p className="mb-3 mt-8 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                Sistem
+              </p>
+            )}
 
             <nav className="space-y-1">
               {secondaryNavigation.map((item) => {
@@ -307,7 +418,9 @@ export function DashboardShell({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                    className={`group relative flex items-center rounded-xl py-2.5 text-sm font-medium transition ${
+                      sidebarCollapsed ? "justify-center px-0" : "gap-3 px-3"
+                    } ${
                       active
                         ? "bg-slate-950 text-white"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
@@ -315,7 +428,13 @@ export function DashboardShell({
                   >
                     <Icon size={18} strokeWidth={1.9} />
 
-                    <span>{item.name}</span>
+                    {!sidebarCollapsed && <span>{item.name}</span>}
+
+                    {sidebarCollapsed && (
+                      <span className="pointer-events-none absolute left-[calc(100%+10px)] z-[100] hidden whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900">
+                        {item.name}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -325,37 +444,70 @@ export function DashboardShell({
           {/* =====================================================
             USER / LOGOUT
         ====================================================== */}
-          <div className="border-t border-slate-100 p-3">
-            <div className="mb-2 flex items-center gap-3 rounded-xl px-3 py-2">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
+          <div className="border-t border-slate-100 p-3 dark:border-slate-800">
+            <div
+              className={`mb-2 flex items-center rounded-xl py-2 ${
+                sidebarCollapsed ? "justify-center px-0" : "gap-3 px-3"
+              }`}
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
                 {initials}
               </div>
 
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-800">
-                  {displayName}
-                </p>
+              {!sidebarCollapsed && (
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                    {displayName}
+                  </p>
 
-                <p className="truncate text-xs text-slate-400">{userEmail}</p>
-              </div>
+                  <p className="truncate text-xs text-slate-400">{userEmail}</p>
+                </div>
+              )}
             </div>
 
             <button
               onClick={handleLogout}
               disabled={loggingOut}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+              className={`group relative flex w-full items-center rounded-xl py-2.5 text-sm font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${
+                sidebarCollapsed ? "justify-center px-0" : "gap-3 px-3"
+              }`}
             >
               <LogOut size={18} />
 
-              {loggingOut ? "Keluar..." : "Logout"}
+              {!sidebarCollapsed && (loggingOut ? "Keluar..." : "Logout")}
+
+              {sidebarCollapsed && (
+                <span className="pointer-events-none absolute left-[calc(100%+10px)] z-[100] hidden whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900">
+                  {loggingOut ? "Keluar..." : "Logout"}
+                </span>
+              )}
             </button>
+
+            {sidebarCollapsed && (
+              <button
+                type="button"
+                onClick={() => setSidebarCollapsed(false)}
+                className="group relative mt-2 flex h-9 w-full items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                aria-label="Buka sidebar"
+                title="Buka sidebar"
+              >
+                <PanelLeftOpen size={17} strokeWidth={1.9} />
+                <span className="pointer-events-none absolute left-[calc(100%+10px)] z-[100] hidden whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg group-hover:block dark:bg-white dark:text-slate-900">
+                  Buka sidebar
+                </span>
+              </button>
+            )}
           </div>
         </aside>
 
         {/* =====================================================
           MAIN
       ====================================================== */}
-        <div className="lg:pl-64">
+        <div
+          className={`transition-[padding] duration-300 ease-in-out ${
+            sidebarCollapsed ? "lg:pl-[76px]" : "lg:pl-64"
+          }`}
+        >
           {/* ===================================================
             TOPBAR
         ==================================================== */}
@@ -381,16 +533,26 @@ export function DashboardShell({
               </Link>
 
               {/* =================================================
-                DESKTOP PAGE TITLE
+                DESKTOP SIDEBAR TOGGLE
+                Judul halaman ditampilkan oleh masing-masing halaman
+                agar tidak terjadi judul desktop yang double.
             ================================================== */}
-              <div className="hidden lg:block">
-                <p className="text-sm font-semibold text-slate-900">
-                  {getPageTitle(pathname)}
-                </p>
+              <div className="hidden items-center gap-3 lg:flex">
+                {sidebarCollapsed && (
+                  <button
+                    type="button"
+                    onClick={() => setSidebarCollapsed(false)}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                    aria-label="Buka sidebar"
+                    title="Buka sidebar"
+                  >
+                    <PanelLeftOpen size={18} strokeWidth={1.9} />
+                  </button>
+                )}
 
-                <p className="text-xs text-slate-400">
-                  Kelola bisnis Anda dengan lebih praktis
-                </p>
+                <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {getPageTitle(pathname)}
+                </span>
               </div>
 
               {/* =================================================
@@ -419,17 +581,95 @@ export function DashboardShell({
                 {/* Notification Bell */}
                 <NotificationBell />
 
-                {/* User Profile — desktop only */}
-                <div className="hidden items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-700 sm:flex">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                    {workspaceInitials}
-                  </div>
+                {/* Workspace Menu — desktop only */}
+                <div
+                  ref={workspaceMenuRef}
+                  className="relative hidden sm:block"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setWorkspaceMenuOpen((current) => !current)}
+                    className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+                    aria-expanded={workspaceMenuOpen}
+                    aria-haspopup="menu"
+                  >
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-[10px] font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+                      {workspaceInitials}
+                    </div>
 
-                  <span className="max-w-40 truncate text-sm font-medium text-slate-700 dark:text-slate-200">
-                    {workspaceName || displayName}
-                  </span>
+                    <span className="max-w-40 truncate text-sm font-medium text-slate-700 dark:text-slate-200">
+                      {workspaceName || displayName}
+                    </span>
 
-                  <ChevronDown size={15} className="text-slate-400" />
+                    <ChevronDown
+                      size={15}
+                      className={`text-slate-400 transition-transform ${
+                        workspaceMenuOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {workspaceMenuOpen && (
+                    <>
+                      <div
+                        role="menu"
+                        className="absolute right-0 top-[calc(100%+8px)] z-[100] w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.14)] dark:border-slate-700 dark:bg-slate-900"
+                      >
+                        <div className="px-3 py-2.5">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                            Workspace aktif
+                          </p>
+                          <p className="mt-1 truncate text-sm font-bold text-slate-900 dark:text-white">
+                            {workspaceName || displayName}
+                          </p>
+                          <span className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            Aktif
+                          </span>
+                        </div>
+
+                        <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+
+                        <Link
+                          href="/settings"
+                          onClick={() => setWorkspaceMenuOpen(false)}
+                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                          role="menuitem"
+                        >
+                          <Settings size={17} className="text-slate-400" />
+                          Pengaturan Workspace
+                        </Link>
+
+                        <Link
+                          href="/settings"
+                          onClick={() => setWorkspaceMenuOpen(false)}
+                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                          role="menuitem"
+                        >
+                          <div className="flex h-[17px] w-[17px] items-center justify-center rounded-full bg-blue-50 text-[8px] font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+                            {initials}
+                          </div>
+                          Profil Akun
+                        </Link>
+
+                        <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setWorkspaceMenuOpen(false);
+                            void handleLogout();
+                          }}
+                          disabled={loggingOut}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                          role="menuitem"
+                        >
+                          <LogOut size={17} />
+                          {loggingOut ? "Keluar..." : "Keluar"}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

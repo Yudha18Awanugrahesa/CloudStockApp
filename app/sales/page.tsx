@@ -47,7 +47,8 @@ export default async function SalesPage() {
         kategori,
         harga_jual,
         stok_produk,
-        aktif
+        aktif,
+        image_url
       `,
     )
     .eq("workspace_id", workspaceId)

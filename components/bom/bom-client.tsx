@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 
-import { ChefHat, Edit3, Plus, Trash2, X } from "lucide-react";
+import { ChefHat, Edit3, Package, Plus, Search, Trash2, X } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 
@@ -410,15 +410,15 @@ export function BomClient({
   // ==========================================================
 
   return (
-    <div className="space-y-6">
+    <div className="-mt-2 space-y-5 sm:-mt-1">
       {/* ====================================================
           HEADER
       ===================================================== */}
 
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end lg:hidden">
         <div>
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/20">
               <ChefHat className="h-5 w-5" />
             </div>
 
@@ -458,283 +458,219 @@ export function BomClient({
       )}
 
       {/* ====================================================
-          MAIN LAYOUT
+          PRODUCT SELECTOR
       ===================================================== */}
 
-      <div className="grid gap-4 lg:grid-cols-[300px_1fr] lg:gap-6">
-        {/* ==================================================
-            PRODUCT LIST
-        =================================================== */}
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              Produk
+            </p>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Produk
-              </p>
-
-              <h2 className="mt-1 text-sm font-semibold text-slate-950 sm:text-base">
-                Pilih produk
-              </h2>
-            </div>
-
-            {selectedProduct && (
-              <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-500">
-                {selectedBomRows.length} bahan
-              </span>
-            )}
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Pilih produk untuk melihat dan mengatur resep.
+            </p>
           </div>
 
-          <select
-            value={selectedProductId}
-            onChange={(event) => setSelectedProductId(event.target.value)}
-            aria-label="Pilih produk"
-            className="mt-3 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5"
-          >
-            <option value="">Pilih produk...</option>
+          <div className="w-full sm:max-w-sm">
+            <label htmlFor="bom-product-select" className="sr-only">
+              Pilih produk
+            </label>
 
-            {products.map((product) => {
-              const recipeCount = bomRows.filter(
-                (row) => row.product_id === product.id,
-              ).length;
+            <select
+              id="bom-product-select"
+              value={selectedProductId}
+              onChange={(event) => setSelectedProductId(event.target.value)}
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            >
+              {products.length === 0 ? (
+                <option value="">Belum ada produk</option>
+              ) : (
+                products.map((product) => {
+                  const recipeCount = bomRows.filter(
+                    (row) => row.product_id === product.id,
+                  ).length;
 
-              return (
-                <option key={product.id} value={product.id}>
-                  {product.nama}
-                  {product.sku ? ` · ${product.sku}` : ""}
-                  {" — "}
-                  {recipeCount} bahan
-                </option>
-              );
-            })}
-          </select>
+                  return (
+                    <option key={product.id} value={product.id}>
+                      {product.nama}
+                      {product.sku ? ` — ${product.sku}` : ""}
+                      {` (${recipeCount} bahan)`}
+                    </option>
+                  );
+                })
+              )}
+            </select>
+          </div>
         </div>
+      </section>
 
-        {/* ==================================================
-            RECIPE DETAIL
-        =================================================== */}
+      {/* ====================================================
+          RECIPE DETAIL
+      ===================================================== */}
 
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          {/* Recipe Header */}
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        {/* Recipe Header */}
+        <div className="flex flex-col justify-between gap-4 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:p-5 dark:border-slate-800">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              Resep Produk
+            </p>
 
-          <div className="flex flex-col justify-between gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:p-5">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                Resep Produk
-              </p>
-
-              <h2 className="mt-1 text-xl font-bold text-slate-950">
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-xl font-bold tracking-tight text-slate-950 dark:text-white">
                 {selectedProduct?.nama ?? "Pilih produk"}
               </h2>
 
-              {selectedProduct && (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {selectedProduct.sku && (
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
-                      {selectedProduct.sku}
-                    </span>
-                  )}
+              {selectedProduct?.sku && (
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  {selectedProduct.sku}
+                </span>
+              )}
 
-                  {selectedProduct.kategori && (
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
-                      {selectedProduct.kategori}
-                    </span>
-                  )}
-                </div>
+              {selectedProduct?.kategori && (
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  {selectedProduct.kategori}
+                </span>
               )}
             </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={openAddModal}
+            disabled={!selectedProductId || availableBahan.length === 0}
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Plus className="h-4 w-4" />
+            Tambah Bahan
+          </button>
+        </div>
+
+        {/* Summary */}
+        <div className="grid grid-cols-2 gap-3 border-b border-slate-100 p-4 sm:grid-cols-3 sm:p-5 dark:border-slate-800">
+          <div className="rounded-xl bg-slate-50 p-3.5 dark:bg-slate-800/60">
+            <p className="text-xs text-slate-400">Jumlah Bahan</p>
+            <p className="mt-1 text-xl font-bold text-slate-950 dark:text-white">
+              {selectedBomRows.length}
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-slate-50 p-3.5 dark:bg-slate-800/60">
+            <p className="text-xs text-slate-400">Estimasi HPP Bahan</p>
+            <p className="mt-1 truncate text-xl font-bold text-slate-950 dark:text-white">
+              {formatRupiah(totalRecipeCost)}
+            </p>
+          </div>
+
+          <div className="col-span-2 rounded-xl bg-slate-50 p-3.5 sm:col-span-1 dark:bg-slate-800/60">
+            <p className="text-xs text-slate-400">Harga Jual</p>
+            <p className="mt-1 truncate text-xl font-bold text-slate-950 dark:text-white">
+              {selectedProduct
+                ? formatRupiah(Number(selectedProduct.harga_jual))
+                : "Rp0"}
+            </p>
+          </div>
+        </div>
+
+        {/* Recipe Table */}
+        {selectedBomRows.length === 0 ? (
+          <div className="p-10 text-center sm:p-12">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/20">
+              <ChefHat className="h-6 w-6" />
+            </div>
+
+            <h3 className="mt-4 font-semibold text-slate-800 dark:text-slate-100">
+              Belum ada resep
+            </h3>
+
+            <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
+              Tambahkan bahan baku yang digunakan untuk membuat produk ini.
+            </p>
 
             <button
               type="button"
               onClick={openAddModal}
-              disabled={!selectedProductId || availableBahan.length === 0}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 px-3.5 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40 sm:h-auto sm:px-4 sm:py-2.5 sm:text-sm"
+              disabled={availableBahan.length === 0}
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Plus className="h-4 w-4" />
               Tambah Bahan
             </button>
           </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
+                <tr>
+                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Bahan Baku
+                  </th>
 
-          {/* =================================================
-              SUMMARY
-          ================================================== */}
+                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Quantity
+                  </th>
 
-          <div className="grid grid-cols-3 gap-2 border-b border-slate-100 p-4 sm:gap-3 sm:p-5">
-            <div className="rounded-xl bg-slate-50 p-3 sm:p-4">
-              <p className="text-xs text-slate-400">Jumlah Bahan</p>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Satuan
+                  </th>
 
-              <p className="mt-1 text-xl font-bold text-slate-950">
-                {selectedBomRows.length}
-              </p>
-            </div>
+                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Estimasi Biaya
+                  </th>
 
-            <div className="rounded-xl bg-slate-50 p-3 sm:p-4">
-              <p className="text-xs text-slate-400">Estimasi HPP Bahan</p>
+                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Aksi
+                  </th>
+                </tr>
+              </thead>
 
-              <p className="mt-1 text-xl font-bold text-slate-950">
-                {formatRupiah(totalRecipeCost)}
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-slate-50 p-3 sm:p-4">
-              <p className="text-xs text-slate-400">Harga Jual</p>
-
-              <p className="mt-1 text-xl font-bold text-slate-950">
-                {selectedProduct
-                  ? formatRupiah(Number(selectedProduct.harga_jual))
-                  : "Rp0"}
-              </p>
-            </div>
-          </div>
-
-          {/* =================================================
-              RECIPE TABLE
-          ================================================== */}
-
-          {selectedBomRows.length === 0 ? (
-            <div className="p-8 text-center sm:p-12">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-                <ChefHat className="h-6 w-6" />
-              </div>
-
-              <h3 className="mt-4 font-semibold text-slate-800">
-                Belum ada resep
-              </h3>
-
-              <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
-                Tambahkan bahan baku yang digunakan untuk membuat produk ini.
-              </p>
-
-              <button
-                type="button"
-                onClick={openAddModal}
-                disabled={availableBahan.length === 0}
-                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-40"
-              >
-                <Plus className="h-4 w-4" />
-                Tambah Bahan
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="hidden overflow-x-auto md:block">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-slate-100 bg-slate-50/70">
-                    <tr>
-                      <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Bahan Baku
-                      </th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Quantity
-                      </th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Satuan
-                      </th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Estimasi Biaya
-                      </th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Aksi
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-slate-100">
-                    {selectedBomRows.map((row) => {
-                      const bahan = bahanMap.get(row.bahan_baku_id);
-                      const biaya = bahan
-                        ? Number(bahan.harga_satuan) * Number(row.quantity)
-                        : 0;
-
-                      return (
-                        <tr
-                          key={row.id}
-                          className="transition hover:bg-slate-50/70"
-                        >
-                          <td className="px-5 py-4">
-                            <p className="font-semibold text-slate-900">
-                              {bahan?.nama ?? "Bahan tidak ditemukan"}
-                            </p>
-                            {bahan?.sku && (
-                              <p className="mt-0.5 text-xs text-slate-400">
-                                SKU: {bahan.sku}
-                              </p>
-                            )}
-                          </td>
-
-                          <td className="px-5 py-4 text-right font-semibold text-slate-900">
-                            {formatNumber(Number(row.quantity))}
-                          </td>
-
-                          <td className="px-5 py-4 text-slate-600">
-                            {bahan?.satuan ?? "-"}
-                          </td>
-
-                          <td className="px-5 py-4 text-right font-medium text-slate-700">
-                            {formatRupiah(biaya)}
-                          </td>
-
-                          <td className="px-5 py-4">
-                            <div className="flex justify-end gap-1">
-                              <button
-                                type="button"
-                                onClick={() => openEditModal(row)}
-                                className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-                                title="Edit"
-                              >
-                                <Edit3 className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(row)}
-                                disabled={deletingId === row.id}
-                                className="rounded-lg p-2 text-red-500 transition hover:bg-red-50 disabled:opacity-50"
-                                title="Hapus"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="divide-y divide-slate-200 md:hidden">
-                {selectedBomRows.map((row, index) => {
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {selectedBomRows.map((row) => {
                   const bahan = bahanMap.get(row.bahan_baku_id);
+
                   const biaya = bahan
                     ? Number(bahan.harga_satuan) * Number(row.quantity)
                     : 0;
 
                   return (
-                    <div key={row.id} className="bg-white px-4 py-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-bold text-slate-500">
-                              {index + 1}
-                            </span>
-
-                            <p className="truncate text-sm font-semibold text-slate-900">
-                              {bahan?.nama ?? "Bahan tidak ditemukan"}
-                            </p>
-                          </div>
+                    <tr
+                      key={row.id}
+                      className="transition hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
+                    >
+                      <td className="px-5 py-4">
+                        <div>
+                          <p className="font-semibold text-slate-900 dark:text-slate-100">
+                            {bahan?.nama ?? "Bahan tidak ditemukan"}
+                          </p>
 
                           {bahan?.sku && (
-                            <p className="mt-1 pl-8 text-[11px] text-slate-400">
+                            <p className="mt-0.5 text-xs text-slate-400">
                               SKU: {bahan.sku}
                             </p>
                           )}
                         </div>
+                      </td>
 
-                        <div className="flex shrink-0 items-center gap-1">
+                      <td className="px-5 py-4 text-right font-semibold text-slate-900 dark:text-slate-100">
+                        {formatNumber(Number(row.quantity))}
+                      </td>
+
+                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
+                        {bahan?.satuan ?? "-"}
+                      </td>
+
+                      <td className="px-5 py-4 text-right font-medium text-slate-700 dark:text-slate-200">
+                        {formatRupiah(biaya)}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <div className="flex justify-end gap-1">
                           <button
                             type="button"
                             onClick={() => openEditModal(row)}
-                            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                            className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                             title="Edit"
                           >
                             <Edit3 className="h-4 w-4" />
@@ -744,50 +680,21 @@ export function BomClient({
                             type="button"
                             onClick={() => handleDelete(row)}
                             disabled={deletingId === row.id}
-                            className="rounded-lg p-2 text-red-500 hover:bg-red-50 disabled:opacity-50"
+                            className="rounded-lg p-2 text-red-500 transition hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950/30"
                             title="Hapus"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
-                      </div>
-
-                      <div className="mt-3 grid grid-cols-3 gap-2">
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-                          <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                            Quantity
-                          </p>
-                          <p className="mt-1 text-sm font-bold text-slate-900">
-                            {formatNumber(Number(row.quantity))}
-                          </p>
-                        </div>
-
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-                          <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                            Satuan
-                          </p>
-                          <p className="mt-1 truncate text-sm font-semibold text-slate-700">
-                            {bahan?.satuan ?? "-"}
-                          </p>
-                        </div>
-
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-                          <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                            Biaya
-                          </p>
-                          <p className="mt-1 truncate text-sm font-bold text-slate-900">
-                            {formatRupiah(biaya)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                      </td>
+                    </tr>
                   );
                 })}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {/* ====================================================
           ADD / EDIT MODAL
@@ -923,7 +830,7 @@ export function BomClient({
                 <button
                   type="submit"
                   disabled={saving}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving ? (
                     <>
