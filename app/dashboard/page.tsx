@@ -329,34 +329,20 @@ export default async function DashboardPage() {
         ==================================================== */}
 
         <section>
-          <div className="mb-3 flex items-start justify-between gap-4">
+          <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                 Business Performance
               </p>
-
-              <h2 className="mt-1 text-base font-semibold text-slate-950">
-                Performa hari ini
-              </h2>
             </div>
 
-            <div className="flex shrink-0 flex-col items-end gap-1.5">
-              <Link
-                href="/sales"
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              >
-                <ShoppingCart size={14} />
-                Penjualan Baru
-              </Link>
-
-              <Link
-                href="/reports"
-                className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 transition hover:text-slate-950"
-              >
-                Lihat laporan
-                <ArrowUpRight size={14} />
-              </Link>
-            </div>
+            <Link
+              href="/reports"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 transition hover:text-slate-950"
+            >
+              Lihat laporan
+              <ArrowUpRight size={14} />
+            </Link>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
@@ -365,7 +351,6 @@ export default async function DashboardPage() {
               value={formatRupiah(todaySalesTotal)}
               description={`${todaySales.length} transaksi`}
               icon={<TrendingUp size={18} />}
-              featured
             />
 
             <MetricCard
@@ -830,7 +815,7 @@ function MetricCard({
     <div
       className={`rounded-2xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${
         featured
-          ? "border-slate-700 bg-slate-900 text-white shadow-md"
+          ? "border-slate-950 bg-slate-950 text-white"
           : "border-slate-200 bg-white"
       }`}
     >

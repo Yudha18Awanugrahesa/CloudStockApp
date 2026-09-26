@@ -347,35 +347,39 @@ export function ReportsClient({
   // ==========================================================
   // RENDER
   // ==========================================================
-
   return (
-    <div className="mx-auto max-w-7xl space-y-5 sm:space-y-5 sm:space-y-6">
-      {/* ====================================================
-          HEADER
-      ===================================================== */}
+    <div className="-mt-2 space-y-5 sm:-mt-1">
+      {/* PAGE INTRO — mobile only */}
+      <div className="lg:hidden">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:ring-blue-500/20">
+            <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          </div>
 
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end sm:gap-4">
-        <div>
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 sm:h-11 sm:w-11 sm:rounded-2xl">
-              <BarChart3 className="h-5 w-5" />
-            </div>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold tracking-tight text-slate-950 dark:text-white">
+              Laporan
+            </h1>
 
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
-                Laporan
-              </h1>
-
-              <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
-                Pantau performa penjualan bisnis Anda.
-              </p>
-            </div>
+            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+              Pantau performa penjualan dan aktivitas bisnis Anda.
+            </p>
           </div>
         </div>
+      </div>
 
-        {/* ==================================================
-            PERIOD FILTER
-        =================================================== */}
+      {/* FILTER */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-950 dark:text-white sm:text-base">
+            Ringkasan Performa
+          </h2>
+
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            Menampilkan data:{" "}
+            <span className="font-semibold">{periodLabel}</span>
+          </p>
+        </div>
 
         <div className="relative w-full sm:w-auto">
           <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -383,14 +387,11 @@ export function ReportsClient({
           <select
             value={period}
             onChange={(event) => setPeriod(event.target.value as PeriodFilter)}
-            className="h-10 w-full min-w-0 appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-9 text-sm font-medium text-slate-700 outline-none focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-100 sm:h-11 sm:min-w-[190px] sm:pl-10 sm:pr-10"
+            className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-10 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:min-w-[190px]"
           >
             <option value="today">Hari Ini</option>
-
             <option value="7days">7 Hari Terakhir</option>
-
             <option value="month">Bulan Ini</option>
-
             <option value="all">Semua Data</option>
           </select>
 
@@ -398,26 +399,14 @@ export function ReportsClient({
         </div>
       </div>
 
-      {/* ====================================================
-          PERIOD INFO
-      ===================================================== */}
-
-      <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 text-xs text-slate-500 shadow-[0_1px_2px_rgba(15,23,42,0.03)] sm:gap-2 sm:text-sm">
-        <TrendingUp className="h-4 w-4" />
-        Menampilkan laporan:
-        <span className="font-semibold text-slate-800">{periodLabel}</span>
-      </div>
-
-      {/* ====================================================
-          SUMMARY CARDS
-      ===================================================== */}
-
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      {/* SUMMARY */}
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <SummaryCard
           title="Total Omzet"
           value={formatRupiah(summary.omzet)}
-          description={`${periodLabel}`}
+          description={periodLabel}
           icon={<Wallet className="h-5 w-5" />}
+          featured
         />
 
         <SummaryCard
@@ -435,35 +424,41 @@ export function ReportsClient({
         />
 
         <SummaryCard
-          title="Rata-rata Transaksi"
+          title="Rata-rata"
           value={formatRupiah(summary.rataRata)}
           description="Nilai per transaksi"
           icon={<TrendingUp className="h-5 w-5" />}
         />
       </div>
 
-      {/* ====================================================
-          CHART + PAYMENT
-      ===================================================== */}
+      {/* SALES + PAYMENT */}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,1fr)]">
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-100 px-4 py-4 sm:px-5 dark:border-slate-800">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-950 dark:text-white sm:text-base">
+                  Tren Penjualan
+                </h2>
 
-      <div className="grid gap-4 sm:gap-6 xl:grid-cols-3">
-        {/* ==================================================
-            DAILY SALES
-        =================================================== */}
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Omzet dan jumlah transaksi berdasarkan hari.
+                </p>
+              </div>
 
-        <div className="rounded-[20px] border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.05)] sm:p-5 xl:col-span-2">
-          <div>
-            <h2 className="font-semibold text-slate-950">Omzet Harian</h2>
-
-            <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
-              Pergerakan omzet berdasarkan transaksi.
-            </p>
+              <div className="hidden rounded-xl bg-slate-50 px-3 py-2 text-right sm:block dark:bg-slate-800/60">
+                <p className="text-[10px] text-slate-400">Periode</p>
+                <p className="mt-0.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                  {periodLabel}
+                </p>
+              </div>
+            </div>
           </div>
 
           {dailySales.length === 0 ? (
             <EmptyReport message="Belum ada data penjualan" />
           ) : (
-            <div className="mt-5 space-y-3 sm:mt-6 sm:space-y-4">
+            <div className="space-y-4 p-4 sm:p-5">
               {dailySales.map((item) => {
                 const percentage = Math.max(
                   4,
@@ -473,27 +468,25 @@ export function ReportsClient({
                 return (
                   <div key={item.date.toISOString()}>
                     <div className="mb-1.5 flex items-center justify-between gap-3">
-                      <span className="text-xs font-medium text-slate-500">
+                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                         {formatShortDate(item.date)}
                       </span>
 
-                      <div className="flex items-center gap-2.5 sm:gap-3">
-                        <span className="text-xs text-slate-400">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-400">
                           {item.transaksi} trx
                         </span>
 
-                        <span className="text-xs font-semibold text-slate-800">
+                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                           {formatRupiah(item.omzet)}
                         </span>
                       </div>
                     </div>
 
-                    <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                       <div
-                        className="h-full rounded-full bg-slate-900 transition-all"
-                        style={{
-                          width: `${percentage}%`,
-                        }}
+                        className="h-full rounded-full bg-blue-600 transition-all dark:bg-blue-500"
+                        style={{ width: `${percentage}%` }}
                       />
                     </div>
                   </div>
@@ -501,25 +494,23 @@ export function ReportsClient({
               })}
             </div>
           )}
-        </div>
+        </section>
 
-        {/* ==================================================
-            PAYMENT
-        =================================================== */}
-
-        <div className="rounded-[20px] border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.05)] sm:p-5">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
           <div>
-            <h2 className="font-semibold text-slate-950">Metode Pembayaran</h2>
+            <h2 className="text-sm font-semibold text-slate-950 dark:text-white sm:text-base">
+              Metode Pembayaran
+            </h2>
 
-            <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
-              Distribusi transaksi berdasarkan metode.
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              Distribusi nilai transaksi.
             </p>
           </div>
 
           {paymentSummary.length === 0 ? (
-            <EmptyReport message="Belum ada transaksi" />
+            <EmptyReport message="Belum ada transaksi" compact />
           ) : (
-            <div className="mt-5 space-y-3 sm:mt-6 sm:space-y-4">
+            <div className="mt-5 space-y-5">
               {paymentSummary.map((item) => {
                 const percentage =
                   summary.omzet > 0 ? (item.total / summary.omzet) * 100 : 0;
@@ -534,13 +525,13 @@ export function ReportsClient({
                 return (
                   <div key={item.method}>
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 sm:gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                           <Icon className="h-4 w-4" />
                         </div>
 
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
                             {paymentLabel(item.method)}
                           </p>
 
@@ -550,17 +541,15 @@ export function ReportsClient({
                         </div>
                       </div>
 
-                      <p className="text-sm font-bold text-slate-900">
+                      <p className="shrink-0 text-sm font-bold text-slate-900 dark:text-white">
                         {formatRupiah(item.total)}
                       </p>
                     </div>
 
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                       <div
-                        className="h-full rounded-full bg-slate-700"
-                        style={{
-                          width: `${Math.max(percentage, 3)}%`,
-                        }}
+                        className="h-full rounded-full bg-slate-700 dark:bg-slate-300"
+                        style={{ width: `${Math.max(percentage, 3)}%` }}
                       />
                     </div>
                   </div>
@@ -568,18 +557,17 @@ export function ReportsClient({
               })}
             </div>
           )}
-        </div>
+        </section>
       </div>
 
-      {/* ====================================================
-          TOP PRODUCTS
-      ===================================================== */}
+      {/* TOP PRODUCTS */}
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="border-b border-slate-100 px-4 py-4 sm:px-5 dark:border-slate-800">
+          <h2 className="text-sm font-semibold text-slate-950 dark:text-white sm:text-base">
+            Produk Terlaris
+          </h2>
 
-      <div className="rounded-[20px] border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.05)]">
-        <div className="border-b border-slate-100 px-4 py-3.5 sm:px-5 sm:py-4">
-          <h2 className="font-semibold text-slate-950">Produk Terlaris</h2>
-
-          <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             Produk dengan quantity penjualan terbanyak.
           </p>
         </div>
@@ -587,74 +575,110 @@ export function ReportsClient({
         {topProducts.length === 0 ? (
           <EmptyReport message="Belum ada produk terjual" />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-left text-sm">
-              <thead className="border-b border-slate-100 bg-slate-50/80">
-                <tr>
-                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Produk
-                  </th>
-
-                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Terjual
-                  </th>
-
-                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Omzet
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-100">
-                {topProducts.map((product, index) => (
-                  <tr
-                    key={product.productId}
-                    className="transition-colors hover:bg-slate-50"
-                  >
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2.5 sm:gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
-                          {index + 1}
-                        </div>
-
-                        <div>
-                          <p className="font-semibold text-slate-900">
-                            {product.nama}
-                          </p>
-
-                          {product.sku && (
-                            <p className="mt-0.5 text-xs text-slate-400">
-                              {product.sku}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-5 py-4 text-right font-semibold text-slate-800">
-                      {formatNumber(product.quantity)}
-                    </td>
-
-                    <td className="px-5 py-4 text-right font-semibold text-slate-900">
-                      {formatRupiah(product.omzet)}
-                    </td>
+          <>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
+                  <tr>
+                    <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      Produk
+                    </th>
+                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      Terjual
+                    </th>
+                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      Omzet
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {topProducts.map((product, index) => (
+                    <tr
+                      key={product.productId}
+                      className="transition hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                            {index + 1}
+                          </div>
+
+                          <div>
+                            <p className="font-semibold text-slate-900 dark:text-slate-100">
+                              {product.nama}
+                            </p>
+
+                            {product.sku && (
+                              <p className="mt-0.5 text-xs text-slate-400">
+                                {product.sku}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-4 text-right font-semibold text-slate-800 dark:text-slate-200">
+                        {formatNumber(product.quantity)}
+                      </td>
+
+                      <td className="px-5 py-4 text-right font-semibold text-slate-900 dark:text-white">
+                        {formatRupiah(product.omzet)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-2.5 p-3 md:hidden">
+              {topProducts.map((product, index) => (
+                <div
+                  key={product.productId}
+                  className="rounded-xl border border-slate-200 p-3 dark:border-slate-800"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xs font-bold text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                      {index + 1}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {product.nama}
+                      </p>
+
+                      {product.sku && (
+                        <p className="mt-0.5 text-xs text-slate-400">
+                          {product.sku}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">
+                        {formatRupiah(product.omzet)}
+                      </p>
+
+                      <p className="mt-0.5 text-[11px] text-slate-400">
+                        {formatNumber(product.quantity)} unit
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
-      </div>
+      </section>
 
-      {/* ====================================================
-          TRANSACTIONS
-      ===================================================== */}
+      {/* RECENT TRANSACTIONS */}
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="border-b border-slate-100 px-4 py-4 sm:px-5 dark:border-slate-800">
+          <h2 className="text-sm font-semibold text-slate-950 dark:text-white sm:text-base">
+            Transaksi Terbaru
+          </h2>
 
-      <div className="rounded-[20px] border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.05)]">
-        <div className="border-b border-slate-100 px-4 py-3.5 sm:px-5 sm:py-4">
-          <h2 className="font-semibold text-slate-950">Transaksi Terbaru</h2>
-
-          <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             Maksimal 10 transaksi terbaru pada periode yang dipilih.
           </p>
         </div>
@@ -663,58 +687,52 @@ export function ReportsClient({
           <EmptyReport message="Belum ada transaksi" />
         ) : (
           <>
-            {/* Desktop */}
-
             <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[520px] text-left text-sm">
-                <thead className="border-b border-slate-100 bg-slate-50/80">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/40">
                   <tr>
                     <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
                       Invoice
                     </th>
-
                     <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
                       Tanggal
                     </th>
-
                     <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
                       Pembayaran
                     </th>
-
                     <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
                       Total
                     </th>
-
                     <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
                       Status
                     </th>
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {recentSales.map((sale) => (
                     <tr
                       key={sale.id}
-                      className="transition-colors hover:bg-slate-50"
+                      className="transition hover:bg-slate-50 dark:hover:bg-slate-800/40"
                     >
-                      <td className="px-5 py-4 font-semibold text-slate-900">
+                      <td className="px-5 py-4 font-semibold text-slate-900 dark:text-slate-100">
                         {sale.invoice_number}
                       </td>
 
-                      <td className="px-5 py-4 text-slate-500">
+                      <td className="px-5 py-4 text-slate-500 dark:text-slate-400">
                         {formatDate(sale.created_at)}
                       </td>
 
-                      <td className="px-5 py-4 text-slate-600">
+                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
                         {paymentLabel(sale.payment_method)}
                       </td>
 
-                      <td className="px-5 py-4 text-right font-semibold text-slate-900">
+                      <td className="px-5 py-4 text-right font-semibold text-slate-900 dark:text-white">
                         {formatRupiah(Number(sale.total_amount))}
                       </td>
 
                       <td className="px-5 py-4 text-right">
-                        <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                        <span className="cs-badge cs-badge-success">
                           {sale.status === "completed"
                             ? "Selesai"
                             : sale.status}
@@ -726,40 +744,37 @@ export function ReportsClient({
               </table>
             </div>
 
-            {/* Mobile */}
-
             <div className="space-y-2.5 p-3 md:hidden">
               {recentSales.map((sale) => (
                 <div
                   key={sale.id}
-                  className="rounded-2xl border border-slate-200/90 p-3.5"
+                  className="rounded-xl border border-slate-200 p-3 dark:border-slate-800"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-slate-900">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                         {sale.invoice_number}
                       </p>
 
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-[11px] text-slate-400">
                         {formatDate(sale.created_at)}
                       </p>
                     </div>
 
-                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                    <span className="cs-badge cs-badge-success shrink-0">
                       {sale.status === "completed" ? "Selesai" : sale.status}
                     </span>
                   </div>
 
-                  <div className="mt-3 flex items-end justify-between">
+                  <div className="mt-3 flex items-end justify-between gap-3">
                     <div>
-                      <p className="text-xs text-slate-400">Pembayaran</p>
-
-                      <p className="mt-1 text-sm font-medium text-slate-700">
+                      <p className="text-[10px] text-slate-400">Pembayaran</p>
+                      <p className="mt-1 text-xs font-medium text-slate-700 dark:text-slate-300">
                         {paymentLabel(sale.payment_method)}
                       </p>
                     </div>
 
-                    <p className="text-base font-bold text-slate-950">
+                    <p className="text-sm font-bold text-slate-950 dark:text-white">
                       {formatRupiah(Number(sale.total_amount))}
                     </p>
                   </div>
@@ -768,57 +783,91 @@ export function ReportsClient({
             </div>
           </>
         )}
-      </div>
+      </section>
     </div>
   );
 }
-
-// ============================================================
-// SUMMARY CARD
-// ============================================================
 
 function SummaryCard({
   title,
   value,
   description,
   icon,
+  featured = false,
 }: {
   title: string;
   value: string;
   description: string;
   icon: React.ReactNode;
+  featured?: boolean;
 }) {
   return (
-    <div className="rounded-[20px] border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.05)] transition hover:border-slate-300 sm:p-5">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+    <div
+      className={`rounded-2xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${
+        featured
+          ? "border-slate-900 bg-slate-950 text-white dark:border-blue-500/30 dark:bg-blue-600"
+          : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+      }`}
+    >
+      <div
+        className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+          featured
+            ? "bg-white/10 text-white"
+            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+        }`}
+      >
         {icon}
       </div>
 
-      <p className="mt-4 text-xs text-slate-500 sm:mt-5 sm:text-sm">{title}</p>
+      <p
+        className={`mt-4 text-xs sm:text-sm ${
+          featured ? "text-slate-300" : "text-slate-500 dark:text-slate-400"
+        }`}
+      >
+        {title}
+      </p>
 
-      <p className="mt-1 truncate text-lg font-bold tracking-tight text-slate-950 sm:text-2xl">
+      <p
+        className={`mt-1 truncate text-lg font-bold tracking-tight sm:text-2xl ${
+          featured ? "text-white" : "text-slate-950 dark:text-white"
+        }`}
+      >
         {value}
       </p>
 
-      <p className="mt-1 text-[11px] text-slate-400 sm:text-xs">
+      <p
+        className={`mt-1 truncate text-[11px] sm:text-xs ${
+          featured ? "text-slate-400" : "text-slate-400"
+        }`}
+      >
         {description}
       </p>
     </div>
   );
 }
 
-// ============================================================
-// EMPTY REPORT
-// ============================================================
-
-function EmptyReport({ message }: { message: string }) {
+function EmptyReport({
+  message,
+  compact = false,
+}: {
+  message: string;
+  compact?: boolean;
+}) {
   return (
-    <div className="mx-5 my-6 rounded-xl border border-dashed border-slate-200/90 bg-slate-50 p-8 text-center">
-      <BarChart3 className="mx-auto h-8 w-8 text-slate-300" />
+    <div
+      className={`mx-4 text-center ${
+        compact
+          ? "my-5 p-4"
+          : "my-5 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-7 dark:border-slate-700 dark:bg-slate-800/40"
+      }`}
+    >
+      <BarChart3 className="mx-auto h-7 w-7 text-slate-300 dark:text-slate-600" />
 
-      <p className="mt-3 text-sm font-medium text-slate-600">{message}</p>
+      <p className="mt-2 text-sm font-medium text-slate-600 dark:text-slate-300">
+        {message}
+      </p>
 
-      <p className="mt-1 text-[11px] text-slate-400 sm:text-xs">
+      <p className="mt-1 text-xs text-slate-400">
         Data akan muncul setelah transaksi tersedia.
       </p>
     </div>

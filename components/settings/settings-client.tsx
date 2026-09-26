@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   Building2,
   CheckCircle2,
+  ChevronRight,
   LogOut,
   Mail,
   ShieldCheck,
@@ -40,6 +41,18 @@ function roleLabel(role: string | null) {
   if (value === "admin" || value === "administrator") return "Administrator";
 
   return "Member";
+}
+
+function getInitials(value: string) {
+  return (
+    value
+      .trim()
+      .split(/\s+/)
+      .map((word) => word.charAt(0))
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "CS"
+  );
 }
 
 export function SettingsClient({
@@ -80,14 +93,10 @@ export function SettingsClient({
     try {
       const { error } = await supabase
         .from("workspaces")
-        .update({
-          name,
-        })
+        .update({ name })
         .eq("id", initialWorkspace.id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       showToast({
         type: "success",
@@ -128,14 +137,10 @@ export function SettingsClient({
 
     try {
       const { error } = await supabase.auth.updateUser({
-        data: {
-          name,
-        },
+        data: { name },
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       showToast({
         type: "success",
@@ -182,190 +187,269 @@ export function SettingsClient({
     window.location.href = "/login";
   }
 
+  const workspaceInitials = getInitials(initialWorkspace.name);
+  const displayName =
+    profileName.trim() || initialEmail.split("@")[0] || "User";
+  const userInitials = getInitials(displayName);
+  const currentRole = roleLabel(initialMembership.role);
+
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-5 sm:space-y-6">
-      {/* HEADER */}
-      <section>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-          Sistem
-        </p>
+    <div className="-mt-1 mx-auto w-full max-w-5xl space-y-5 pb-6 sm:space-y-6 lg:-mt-2">
+      {/* PAGE INTRO
+          Dashboard shell already shows "Pengaturan" on desktop.
+          Keep this compact page intro for mobile only. */}
+      <section className="lg:hidden">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:ring-blue-500/20">
+            <UserRound className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          </div>
 
-        <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-          Pengaturan
-        </h1>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+              Sistem
+            </p>
 
-        <p className="mt-1 text-sm text-slate-500 sm:text-base">
-          Kelola workspace dan informasi akun Anda.
-        </p>
+            <h1 className="mt-1 text-xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+              Pengaturan
+            </h1>
+
+            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400 sm:text-sm">
+              Kelola workspace, profil, dan akses akun Cloud Stock Anda.
+            </p>
+          </div>
+        </div>
       </section>
 
-      {/* WORKSPACE */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 p-4 sm:p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-              <Building2 className="h-5 w-5" />
+      {/* WORKSPACE HERO */}
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="border-b border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/30 sm:p-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sm font-bold text-blue-600 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/20">
+                {workspaceInitials}
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                  Workspace aktif
+                </p>
+
+                <h2 className="mt-0.5 truncate text-base font-bold text-slate-950 dark:text-white sm:text-lg">
+                  {initialWorkspace.name}
+                </h2>
+              </div>
             </div>
 
-            <div>
-              <h2 className="text-sm font-semibold text-slate-950 sm:text-base">
-                Workspace
-              </h2>
-
-              <p className="text-xs text-slate-500 sm:text-sm">
-                Identitas workspace aktif Cloud Stock.
-              </p>
+            <div className="hidden shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 sm:flex">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Aktif
             </div>
           </div>
         </div>
 
         <form onSubmit={handleWorkspaceSubmit} className="p-4 sm:p-5">
-          <div className="mb-4 rounded-xl bg-slate-50 p-3.5">
-            <p className="text-sm font-semibold text-slate-900">
-              {initialWorkspace.name}
-            </p>
-
-            <p className="mt-0.5 text-xs text-slate-500">
-              Workspace aktif untuk akun ini.
-            </p>
-          </div>
-
           <label
             htmlFor="workspace-name"
-            className="mb-2 block text-sm font-medium text-slate-700"
+            className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200"
           >
             Nama Workspace
           </label>
 
-          <input
-            id="workspace-name"
-            value={workspaceName}
-            onChange={(event) => setWorkspaceName(event.target.value)}
-            maxLength={80}
-            disabled={savingWorkspace}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-950 focus:ring-2 focus:ring-slate-950/10 disabled:bg-slate-50"
-          />
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+            <div className="min-w-0">
+              <input
+                id="workspace-name"
+                value={workspaceName}
+                onChange={(event) => setWorkspaceName(event.target.value)}
+                maxLength={80}
+                disabled={savingWorkspace}
+                placeholder="Contoh: Toko Saya"
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
+              />
 
-          <div className="mt-4 flex justify-end">
+              <p className="mt-1.5 text-xs text-slate-400">
+                Nama ini digunakan sebagai identitas bisnis/workspace Anda.
+              </p>
+            </div>
+
             <button
               type="submit"
               disabled={savingWorkspace}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto md:min-w-[170px]"
             >
-              {savingWorkspace ? "Menyimpan..." : "Simpan"}
+              {savingWorkspace ? "Menyimpan..." : "Simpan Perubahan"}
             </button>
           </div>
         </form>
       </section>
 
-      {/* PROFILE */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 p-4 sm:p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-              <UserRound className="h-5 w-5" />
-            </div>
-
-            <div>
-              <h2 className="text-sm font-semibold text-slate-950 sm:text-base">
-                Profil Akun
-              </h2>
-
-              <p className="text-xs text-slate-500 sm:text-sm">
-                Informasi akun yang digunakan untuk Cloud Stock.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <form onSubmit={handleProfileSubmit} className="space-y-4 p-4 sm:p-5">
-          <div>
-            <label
-              htmlFor="profile-name"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Nama
-            </label>
-
-            <input
-              id="profile-name"
-              value={profileName}
-              onChange={(event) => setProfileName(event.target.value)}
-              maxLength={80}
-              disabled={savingProfile}
-              placeholder="Nama pengguna"
-              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-950 focus:ring-2 focus:ring-slate-950/10 disabled:bg-slate-50"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="profile-email"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              Email
-            </label>
-
-            <div className="relative">
-              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-              <input
-                id="profile-email"
-                value={initialEmail}
-                readOnly
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3.5 text-sm text-slate-500 outline-none"
-              />
-            </div>
-
-            <p className="mt-1.5 text-xs text-slate-400">
-              Email login tidak diubah dari halaman ini.
-            </p>
-          </div>
-
-          <div>
-            <p className="mb-2 text-sm font-medium text-slate-700">Role</p>
-
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3">
-              <ShieldCheck className="h-4 w-4 text-slate-500" />
+      {/* ACCOUNT GRID */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.75fr)]">
+        {/* PROFILE */}
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-100 p-4 dark:border-slate-800 sm:p-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                <UserRound className="h-5 w-5" />
+              </div>
 
               <div>
-                <p className="text-sm font-medium text-slate-800">
-                  {roleLabel(initialMembership.role)}
-                </p>
+                <h2 className="text-sm font-bold text-slate-950 dark:text-white sm:text-base">
+                  Profil Akun
+                </h2>
 
-                <p className="text-xs text-slate-400">
-                  Role workspace akun saat ini.
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Informasi dasar akun yang digunakan untuk masuk.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={savingProfile}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {savingProfile ? "Menyimpan..." : "Simpan Profil"}
-            </button>
-          </div>
-        </form>
-      </section>
+          <form onSubmit={handleProfileSubmit} className="space-y-4 p-4 sm:p-5">
+            <div>
+              <label
+                htmlFor="profile-name"
+                className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200"
+              >
+                Nama
+              </label>
 
-      {/* ACCOUNT */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                  {userInitials}
+                </div>
+
+                <input
+                  id="profile-name"
+                  value={profileName}
+                  onChange={(event) => setProfileName(event.target.value)}
+                  maxLength={80}
+                  disabled={savingProfile}
+                  placeholder="Nama pengguna"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="profile-email"
+                className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200"
+              >
+                Email
+              </label>
+
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                <input
+                  id="profile-email"
+                  value={initialEmail}
+                  readOnly
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3.5 text-sm text-slate-500 outline-none dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-400"
+                />
+              </div>
+
+              <p className="mt-1.5 text-xs text-slate-400">
+                Email login tidak diubah dari halaman ini.
+              </p>
+            </div>
+
+            <div className="flex justify-end border-t border-slate-100 pt-4 dark:border-slate-800">
+              <button
+                type="submit"
+                disabled={savingProfile}
+                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              >
+                {savingProfile ? "Menyimpan..." : "Simpan Profil"}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        {/* ACCESS */}
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-100 p-4 dark:border-slate-800 sm:p-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+
+              <div>
+                <h2 className="text-sm font-bold text-slate-950 dark:text-white sm:text-base">
+                  Akses & Keamanan
+                </h2>
+
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Informasi akses akun saat ini.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 p-4 sm:p-5">
+            <div className="rounded-xl border border-slate-200 p-3.5 dark:border-slate-800">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs text-slate-400">Role Workspace</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+                    {currentRole}
+                  </p>
+                </div>
+
+                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+                  {currentRole}
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 p-3.5 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <Mail className="h-4 w-4 text-slate-400" />
+
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-400">Email akun</p>
+                  <p className="mt-1 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+                    {initialEmail}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-blue-50 p-3.5 dark:bg-blue-500/10">
+              <div className="flex gap-3">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+
+                <div>
+                  <p className="text-xs font-semibold text-blue-800 dark:text-blue-300">
+                    Akses workspace
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-blue-700/80 dark:text-blue-300/70">
+                    Akun Anda terhubung dengan workspace aktif dan dapat
+                    menggunakan fitur sesuai role yang diberikan.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* SESSION */}
+      <section className="rounded-2xl border border-red-200 bg-white shadow-sm dark:border-red-500/20 dark:bg-slate-900">
         <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">
               <LogOut className="h-5 w-5" />
             </div>
 
             <div>
-              <h2 className="text-sm font-semibold text-slate-950 sm:text-base">
-                Akun
+              <h2 className="text-sm font-bold text-slate-950 dark:text-white sm:text-base">
+                Sesi Akun
               </h2>
 
-              <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
+              <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
                 Keluar dari sesi Cloud Stock pada perangkat ini.
               </p>
             </div>
@@ -375,18 +459,20 @@ export function SettingsClient({
             type="button"
             onClick={handleLogout}
             disabled={loggingOut}
-            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-500/20 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-500/10 sm:w-auto"
           >
             <LogOut className="h-4 w-4" />
-
-            {loggingOut ? "Keluar..." : "Logout"}
+            {loggingOut ? "Keluar..." : "Keluar dari Akun"}
           </button>
         </div>
       </section>
 
-      <div className="flex items-center justify-center gap-2 pb-2 text-xs text-slate-400">
-        <CheckCircle2 className="h-3.5 w-3.5" />
-        Cloud Stock Settings
+      {/* FOOTER */}
+      <div className="flex items-center justify-center gap-1.5 pb-1 text-[11px] text-slate-400">
+        Cloud Stock
+        <span>•</span>
+        Pengaturan Workspace
+        <ChevronRight className="h-3 w-3" />
       </div>
     </div>
   );
