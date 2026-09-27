@@ -55,6 +55,11 @@ const navigation = [
     icon: ShoppingCart,
   },
   {
+    name: "Riwayat Penjualan",
+    href: "/sales/history",
+    icon: Receipt,
+  },
+  {
     name: "Laporan",
     href: "/reports",
     icon: Receipt,
@@ -532,6 +537,13 @@ export function DashboardShell({
                 </span>
               </Link>
 
+              {/* MOBILE PAGE TITLE */}
+              <div className="min-w-0 flex-1 px-2 lg:hidden">
+                <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {getPageTitle(pathname)}
+                </p>
+              </div>
+
               {/* =================================================
                 DESKTOP SIDEBAR TOGGLE
                 Judul halaman ditampilkan oleh masing-masing halaman
@@ -790,6 +802,11 @@ export function DashboardShell({
                   {[
                     { name: "Produk", href: "/products", icon: Package },
                     { name: "BOM / Resep", href: "/bom", icon: FileBarChart },
+                    {
+                      name: "Riwayat Penjualan",
+                      href: "/sales/history",
+                      icon: Receipt,
+                    },
                     { name: "Pengaturan", href: "/settings", icon: Settings },
                   ].map((item) => {
                     const Icon = item.icon;
@@ -840,6 +857,10 @@ function getPageTitle(pathname: string) {
 
   if (pathname.startsWith("/bom")) {
     return "BOM / Resep";
+  }
+
+  if (pathname.startsWith("/sales/history")) {
+    return "Riwayat Penjualan";
   }
 
   if (pathname.startsWith("/sales")) {

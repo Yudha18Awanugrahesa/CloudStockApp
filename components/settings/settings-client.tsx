@@ -2,9 +2,12 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
+  Archive,
   Building2,
   CheckCircle2,
   ChevronRight,
+  Database,
   LogOut,
   Mail,
   ShieldCheck,
@@ -66,9 +69,15 @@ export function SettingsClient({
 
   const [workspaceName, setWorkspaceName] = useState(initialWorkspace.name);
   const [profileName, setProfileName] = useState(initialName);
+
   const [savingWorkspace, setSavingWorkspace] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const [showArchiveSalesModal, setShowArchiveSalesModal] = useState(false);
+  const [archivingSales, setArchivingSales] = useState(false);
+  const [archiveStartDate, setArchiveStartDate] = useState("");
+  const [archiveEndDate, setArchiveEndDate] = useState("");
 
   useEffect(() => {
     setWorkspaceName(initialWorkspace.name);
@@ -85,6 +94,7 @@ export function SettingsClient({
         title: "Nama workspace belum diisi",
         message: "Masukkan nama workspace terlebih dahulu.",
       });
+
       return;
     }
 
@@ -130,6 +140,7 @@ export function SettingsClient({
         title: "Nama belum diisi",
         message: "Masukkan nama pengguna terlebih dahulu.",
       });
+
       return;
     }
 
@@ -163,6 +174,92 @@ export function SettingsClient({
     }
   }
 
+  async function handleArchiveSales() {
+    if (archivingSales) return;
+
+    if (!isOwner) {
+      showToast({
+        type: "error",
+        title: "Akses ditolak",
+        message: "Hanya Owner workspace yang dapat melakukan tutup buku.",
+        duration: 6000,
+      });
+      return;
+    }
+
+    if (!archiveStartDate || !archiveEndDate) {
+      showToast({
+        type: "warning",
+        title: "Periode belum lengkap",
+        message: "Pilih tanggal mulai dan tanggal akhir terlebih dahulu.",
+        duration: 6000,
+      });
+      return;
+    }
+
+    if (archiveEndDate < archiveStartDate) {
+      showToast({
+        type: "warning",
+        title: "Periode tidak valid",
+        message: "Tanggal akhir harus sama atau setelah tanggal mulai.",
+        duration: 6000,
+      });
+      return;
+    }
+
+    setArchivingSales(true);
+
+    try {
+      // p_end_at pada RPC bersifat exclusive.
+      // Karena user memilih tanggal akhir kalender, tambahkan 1 hari
+      // agar seluruh transaksi pada tanggal akhir ikut terarsip.
+      const endDate = new Date(`${archiveEndDate}T00:00:00`);
+      endDate.setDate(endDate.getDate() + 1);
+
+      const startAt = `${archiveStartDate}T00:00:00`;
+      const endAt = endDate.toISOString();
+
+      const { data, error } = await supabase.rpc("archive_sales_period", {
+        p_workspace_id: initialWorkspace.id,
+        p_start_at: new Date(startAt).toISOString(),
+        p_end_at: endAt,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setShowArchiveSalesModal(false);
+
+      showToast({
+        type: "success",
+        title: "Tutup buku berhasil",
+        message:
+          data?.message ??
+          `${data?.archived_count ?? 0} transaksi berhasil dipindahkan ke arsip.`,
+        duration: 7000,
+      });
+
+      // Reset periode setelah berhasil.
+      setArchiveStartDate("");
+      setArchiveEndDate("");
+    } catch (error) {
+      console.error("Archive sales error:", error);
+
+      showToast({
+        type: "error",
+        title: "Gagal melakukan tutup buku",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat memindahkan transaksi ke arsip.",
+        duration: 7000,
+      });
+    } finally {
+      setArchivingSales(false);
+    }
+  }
+
   async function handleLogout() {
     if (loggingOut) return;
 
@@ -188,16 +285,19 @@ export function SettingsClient({
   }
 
   const workspaceInitials = getInitials(initialWorkspace.name);
+
   const displayName =
     profileName.trim() || initialEmail.split("@")[0] || "User";
+
   const userInitials = getInitials(displayName);
+
   const currentRole = roleLabel(initialMembership.role);
+
+  const isOwner = initialMembership.role?.toLowerCase() === "owner";
 
   return (
     <div className="-mt-1 mx-auto w-full max-w-5xl space-y-5 pb-6 sm:space-y-6 lg:-mt-2">
-      {/* PAGE INTRO
-          Dashboard shell already shows "Pengaturan" on desktop.
-          Keep this compact page intro for mobile only. */}
+      {/* PAGE INTRO */}
       <section className="lg:hidden">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:ring-blue-500/20">
@@ -392,6 +492,7 @@ export function SettingsClient({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs text-slate-400">Role Workspace</p>
+
                   <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                     {currentRole}
                   </p>
@@ -409,6 +510,7 @@ export function SettingsClient({
 
                 <div className="min-w-0">
                   <p className="text-xs text-slate-400">Email akun</p>
+
                   <p className="mt-1 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
                     {initialEmail}
                   </p>
@@ -436,6 +538,115 @@ export function SettingsClient({
         </section>
       </div>
 
+      {/* DATA MANAGEMENT */}
+      <section className="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm dark:border-amber-500/20 dark:bg-slate-900">
+        <div className="border-b border-amber-100 bg-amber-50/60 p-4 dark:border-amber-500/10 dark:bg-amber-500/5 sm:p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+              <Database className="h-5 w-5" />
+            </div>
+
+            <div>
+              <h2 className="text-sm font-bold text-slate-950 dark:text-white sm:text-base">
+                Manajemen Data
+              </h2>
+
+              <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                Kelola dan arsipkan data operasional transaksi pada workspace
+                ini.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-5">
+          <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-500/20 dark:bg-amber-500/5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                  <Archive className="h-4 w-4" />
+                </div>
+
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-300">
+                    Tutup Buku Transaksi
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-5 text-amber-800/80 dark:text-amber-300/70">
+                    Pindahkan transaksi pada periode tertentu ke arsip tanpa
+                    mengubah stok bahan baku.
+                  </p>
+
+                  {!isOwner && (
+                    <p className="mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                      Hanya Owner workspace yang dapat menggunakan fitur ini.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowArchiveSalesModal(true)}
+                disabled={!isOwner || archivingSales}
+                className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto"
+              >
+                <Archive className="h-4 w-4" />
+                Tutup Buku
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-3 border-t border-amber-200/70 pt-4 dark:border-amber-500/10 sm:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="archive-start-date"
+                  className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+                >
+                  Tanggal Mulai
+                </label>
+
+                <input
+                  id="archive-start-date"
+                  type="date"
+                  value={archiveStartDate}
+                  onChange={(event) => setArchiveStartDate(event.target.value)}
+                  disabled={!isOwner || archivingSales}
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="archive-end-date"
+                  className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+                >
+                  Tanggal Akhir
+                </label>
+
+                <input
+                  id="archive-end-date"
+                  type="date"
+                  value={archiveEndDate}
+                  min={archiveStartDate || undefined}
+                  onChange={(event) => setArchiveEndDate(event.target.value)}
+                  disabled={!isOwner || archivingSales}
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
+                />
+              </div>
+            </div>
+
+            <div className="mt-3 flex gap-2 rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-500/20 dark:bg-blue-500/10">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+
+              <p className="text-[11px] leading-5 text-blue-700 dark:text-blue-300">
+                Tutup buku hanya memindahkan transaksi ke arsip. Stok bahan baku
+                dan catatan stock movement tidak diubah.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* SESSION */}
       <section className="rounded-2xl border border-red-200 bg-white shadow-sm dark:border-red-500/20 dark:bg-slate-900">
         <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
@@ -462,6 +673,7 @@ export function SettingsClient({
             className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-500/20 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-500/10 sm:w-auto"
           >
             <LogOut className="h-4 w-4" />
+
             {loggingOut ? "Keluar..." : "Keluar dari Akun"}
           </button>
         </div>
@@ -474,6 +686,96 @@ export function SettingsClient({
         Pengaturan Workspace
         <ChevronRight className="h-3 w-3" />
       </div>
+
+      {/* ARCHIVE SALES MODAL */}
+      {showArchiveSalesModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="archive-sales-title"
+        >
+          <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+            <div className="border-b border-slate-100 p-5 dark:border-slate-800">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+
+                <div className="min-w-0">
+                  <h2
+                    id="archive-sales-title"
+                    className="text-base font-bold text-slate-950 dark:text-white"
+                  >
+                    Tutup Buku Transaksi?
+                  </h2>
+
+                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    Transaksi pada periode yang dipilih akan dipindahkan dari
+                    transaksi aktif ke arsip.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 p-5">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/5">
+                <p className="text-xs font-semibold text-amber-900 dark:text-amber-300">
+                  Periode
+                </p>
+
+                <p className="mt-1 text-sm font-bold text-slate-900 dark:text-white">
+                  {archiveStartDate} sampai {archiveEndDate}
+                </p>
+              </div>
+
+              <ul className="space-y-2 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                <li className="flex gap-2">
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-500" />
+                  Transaksi pada periode tersebut akan dipindahkan ke
+                  <strong className="font-semibold"> sales_archive</strong>.
+                </li>
+
+                <li className="flex gap-2">
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-500" />
+                  Transaksi tidak lagi muncul pada Riwayat Penjualan aktif.
+                </li>
+
+                <li className="flex gap-2">
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-500" />
+                  Stok bahan baku tidak berubah.
+                </li>
+
+                <li className="flex gap-2">
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-amber-500" />
+                  Data arsip tetap tersimpan untuk kebutuhan histori.
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-100 p-4 dark:border-slate-800 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowArchiveSalesModal(false)}
+                disabled={archivingSales}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                onClick={handleArchiveSales}
+                disabled={archivingSales}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Archive className="h-4 w-4" />
+                {archivingSales ? "Memproses..." : "Ya, Tutup Buku"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

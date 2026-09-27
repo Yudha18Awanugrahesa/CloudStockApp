@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 
 import {
   Banknote,
@@ -12,6 +13,7 @@ import {
   ShoppingCart,
   TrendingUp,
   Wallet,
+  Download,
 } from "lucide-react";
 
 // ============================================================
@@ -125,6 +127,161 @@ function paymentLabel(method: string) {
 }
 
 // ============================================================
+// EXPORT EXCEL
+// ============================================================
+
+function exportSalesToExcel(
+  sales: Sale[],
+  items: SaleItem[],
+  products: Map<string, Product>,
+  periodLabel: string,
+) {
+  const completedSales = sales.filter(
+    (sale) => sale.status.toLowerCase() === "completed",
+  );
+
+  const cancelledSales = sales.filter(
+    (sale) => sale.status.toLowerCase() === "cancelled",
+  );
+
+  const itemsBySale = new Map<string, SaleItem[]>();
+
+  items.forEach((item) => {
+    const current = itemsBySale.get(item.sale_id) ?? [];
+    current.push(item);
+    itemsBySale.set(item.sale_id, current);
+  });
+
+  const transactionRows = sales.flatMap((sale) => {
+    const saleItems = itemsBySale.get(sale.id) ?? [];
+
+    if (saleItems.length === 0) {
+      return [
+        {
+          Invoice: sale.invoice_number,
+          Tanggal: new Date(sale.created_at).toLocaleString("id-ID"),
+          Status:
+            sale.status.toLowerCase() === "completed"
+              ? "Selesai"
+              : sale.status.toLowerCase() === "cancelled"
+                ? "Dibatalkan"
+                : sale.status,
+          Pembayaran: paymentLabel(sale.payment_method),
+          Produk: "-",
+          SKU: "-",
+          Qty: 0,
+          Harga: 0,
+          Subtotal: Number(sale.total_amount),
+          Total_Transaksi: Number(sale.total_amount),
+        },
+      ];
+    }
+
+    return saleItems.map((item) => {
+      const product = products.get(item.product_id);
+
+      return {
+        Invoice: sale.invoice_number,
+        Tanggal: new Date(sale.created_at).toLocaleString("id-ID"),
+        Status:
+          sale.status.toLowerCase() === "completed"
+            ? "Selesai"
+            : sale.status.toLowerCase() === "cancelled"
+              ? "Dibatalkan"
+              : sale.status,
+        Pembayaran: paymentLabel(sale.payment_method),
+        Produk: product?.nama ?? "Produk tidak ditemukan",
+        SKU: product?.sku ?? "-",
+        Qty: Number(item.quantity),
+        Harga: Number(item.unit_price),
+        Subtotal: Number(item.subtotal),
+        Total_Transaksi: Number(sale.total_amount),
+      };
+    });
+  });
+
+  const totalOmzet = completedSales.reduce(
+    (total, sale) => total + Number(sale.total_amount),
+    0,
+  );
+
+  const summaryRows = [
+    { Metrik: "Periode", Nilai: periodLabel },
+    { Metrik: "Total Transaksi", Nilai: sales.length },
+    { Metrik: "Transaksi Selesai", Nilai: completedSales.length },
+    { Metrik: "Transaksi Dibatalkan", Nilai: cancelledSales.length },
+    { Metrik: "Total Omzet", Nilai: totalOmzet },
+    {
+      Metrik: "Diekspor Pada",
+      Nilai: new Date().toLocaleString("id-ID"),
+    },
+  ];
+
+  const productMapExport = new Map<
+    string,
+    {
+      Produk: string;
+      SKU: string;
+      Terjual: number;
+      Omzet: number;
+    }
+  >();
+
+  const completedSaleIds = new Set(completedSales.map((sale) => sale.id));
+
+  items.forEach((item) => {
+    if (!completedSaleIds.has(item.sale_id)) return;
+
+    const product = products.get(item.product_id);
+
+    const existing = productMapExport.get(item.product_id) ?? {
+      Produk: product?.nama ?? "Produk tidak ditemukan",
+      SKU: product?.sku ?? "-",
+      Terjual: 0,
+      Omzet: 0,
+    };
+
+    existing.Terjual += Number(item.quantity);
+    existing.Omzet += Number(item.subtotal);
+
+    productMapExport.set(item.product_id, existing);
+  });
+
+  const workbook = XLSX.utils.book_new();
+
+  const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
+  const transactionSheet = XLSX.utils.json_to_sheet(transactionRows);
+  const productSheet = XLSX.utils.json_to_sheet(
+    Array.from(productMapExport.values()),
+  );
+
+  summarySheet["!cols"] = [{ wch: 24 }, { wch: 28 }];
+
+  transactionSheet["!cols"] = [
+    { wch: 18 },
+    { wch: 22 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 28 },
+    { wch: 18 },
+    { wch: 10 },
+    { wch: 16 },
+    { wch: 18 },
+    { wch: 20 },
+  ];
+
+  productSheet["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 18 }];
+
+  XLSX.utils.book_append_sheet(workbook, summarySheet, "Ringkasan");
+  XLSX.utils.book_append_sheet(workbook, transactionSheet, "Transaksi");
+  XLSX.utils.book_append_sheet(workbook, productSheet, "Produk Terjual");
+
+  const date = new Date().toISOString().slice(0, 10);
+
+  XLSX.writeFile(workbook, `CloudStock_Laporan_${date}.xlsx`);
+}
+
+// ============================================================
 // COMPONENT
 // ============================================================
 
@@ -176,18 +333,36 @@ export function ReportsClient({
   }, [initialSaleItems, filteredSaleIds]);
 
   // ==========================================================
+  // TRANSACTIONS THAT COUNT TOWARD REPORTING
+  // ==========================================================
+
+  const completedSales = useMemo(() => {
+    return filteredSales.filter(
+      (sale) => sale.status.toLowerCase() === "completed",
+    );
+  }, [filteredSales]);
+
+  const completedSaleIds = useMemo(() => {
+    return new Set(completedSales.map((sale) => sale.id));
+  }, [completedSales]);
+
+  const completedItems = useMemo(() => {
+    return filteredItems.filter((item) => completedSaleIds.has(item.sale_id));
+  }, [filteredItems, completedSaleIds]);
+
+  // ==========================================================
   // SUMMARY
   // ==========================================================
 
   const summary = useMemo(() => {
-    const omzet = filteredSales.reduce(
+    const omzet = completedSales.reduce(
       (total, sale) => total + Number(sale.total_amount),
       0,
     );
 
-    const transaksi = filteredSales.length;
+    const transaksi = completedSales.length;
 
-    const produkTerjual = filteredItems.reduce(
+    const produkTerjual = completedItems.reduce(
       (total, item) => total + Number(item.quantity),
       0,
     );
@@ -200,7 +375,7 @@ export function ReportsClient({
       produkTerjual,
       rataRata,
     };
-  }, [filteredSales, filteredItems]);
+  }, [completedSales, completedItems]);
 
   // ==========================================================
   // DAILY SALES
@@ -216,7 +391,7 @@ export function ReportsClient({
       }
     >();
 
-    filteredSales.forEach((sale) => {
+    completedSales.forEach((sale) => {
       const date = new Date(sale.created_at);
 
       const key = [date.getFullYear(), date.getMonth(), date.getDate()].join(
@@ -241,7 +416,7 @@ export function ReportsClient({
     return Array.from(map.values()).sort(
       (a, b) => a.date.getTime() - b.date.getTime(),
     );
-  }, [filteredSales]);
+  }, [completedSales]);
 
   // ==========================================================
   // MAX DAILY OMZET
@@ -265,7 +440,7 @@ export function ReportsClient({
       }
     >();
 
-    filteredSales.forEach((sale) => {
+    completedSales.forEach((sale) => {
       const method = sale.payment_method;
 
       const existing = map.get(method);
@@ -284,7 +459,7 @@ export function ReportsClient({
     });
 
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, [filteredSales]);
+  }, [completedSales]);
 
   // ==========================================================
   // TOP PRODUCTS
@@ -302,7 +477,7 @@ export function ReportsClient({
       }
     >();
 
-    filteredItems.forEach((item) => {
+    completedItems.forEach((item) => {
       const product = productMap.get(item.product_id);
 
       const existing = map.get(item.product_id);
@@ -325,7 +500,7 @@ export function ReportsClient({
     return Array.from(map.values())
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 5);
-  }, [filteredItems, productMap]);
+  }, [completedItems, productMap]);
 
   // ==========================================================
   // RECENT SALES
@@ -343,6 +518,10 @@ export function ReportsClient({
     month: "Bulan Ini",
     all: "Semua Data",
   }[period];
+
+  function handleExportExcel() {
+    exportSalesToExcel(filteredSales, filteredItems, productMap, periodLabel);
+  }
 
   // ==========================================================
   // RENDER
@@ -381,21 +560,35 @@ export function ReportsClient({
           </p>
         </div>
 
-        <div className="relative w-full sm:w-auto">
-          <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <div className="relative w-full sm:w-auto">
+            <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
-          <select
-            value={period}
-            onChange={(event) => setPeriod(event.target.value as PeriodFilter)}
-            className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-10 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:min-w-[190px]"
+            <select
+              value={period}
+              onChange={(event) =>
+                setPeriod(event.target.value as PeriodFilter)
+              }
+              className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-9 pr-10 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:min-w-[190px]"
+            >
+              <option value="today">Hari Ini</option>
+              <option value="7days">7 Hari Terakhir</option>
+              <option value="month">Bulan Ini</option>
+              <option value="all">Semua Data</option>
+            </select>
+
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleExportExcel}
+            disabled={filteredSales.length === 0}
+            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 sm:w-auto"
           >
-            <option value="today">Hari Ini</option>
-            <option value="7days">7 Hari Terakhir</option>
-            <option value="month">Bulan Ini</option>
-            <option value="all">Semua Data</option>
-          </select>
-
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Download className="h-4 w-4" />
+            Export Excel
+          </button>
         </div>
       </div>
 
@@ -732,10 +925,18 @@ export function ReportsClient({
                       </td>
 
                       <td className="px-5 py-4 text-right">
-                        <span className="cs-badge cs-badge-success">
-                          {sale.status === "completed"
+                        <span
+                          className={
+                            sale.status.toLowerCase() === "completed"
+                              ? "cs-badge cs-badge-success"
+                              : "inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20"
+                          }
+                        >
+                          {sale.status.toLowerCase() === "completed"
                             ? "Selesai"
-                            : sale.status}
+                            : sale.status.toLowerCase() === "cancelled"
+                              ? "Dibatalkan"
+                              : sale.status}
                         </span>
                       </td>
                     </tr>
@@ -761,8 +962,18 @@ export function ReportsClient({
                       </p>
                     </div>
 
-                    <span className="cs-badge cs-badge-success shrink-0">
-                      {sale.status === "completed" ? "Selesai" : sale.status}
+                    <span
+                      className={
+                        sale.status.toLowerCase() === "completed"
+                          ? "cs-badge cs-badge-success shrink-0"
+                          : "inline-flex shrink-0 items-center rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20"
+                      }
+                    >
+                      {sale.status.toLowerCase() === "completed"
+                        ? "Selesai"
+                        : sale.status.toLowerCase() === "cancelled"
+                          ? "Dibatalkan"
+                          : sale.status}
                     </span>
                   </div>
 

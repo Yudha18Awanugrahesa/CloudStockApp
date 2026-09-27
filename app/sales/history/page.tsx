@@ -65,7 +65,10 @@ export default async function SalesHistoryPage() {
 
   return (
     <DashboardShell userEmail={user.email} userName={userName}>
-      <SalesHistoryClient initialSales={sales ?? []} />
+      <SalesHistoryClient
+        initialSales={sales ?? []}
+        workspaceId={membership.workspace_id}
+      />
     </DashboardShell>
   );
 }
