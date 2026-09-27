@@ -537,12 +537,7 @@ export function DashboardShell({
                 </span>
               </Link>
 
-              {/* MOBILE PAGE TITLE */}
-              <div className="min-w-0 flex-1 px-2 lg:hidden">
-                <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {getPageTitle(pathname)}
-                </p>
-              </div>
+              
 
               {/* =================================================
                 DESKTOP SIDEBAR TOGGLE
