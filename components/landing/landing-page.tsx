@@ -130,7 +130,7 @@ function Logo({ light = false }: { light?: boolean }) {
     <Link href="/" className="flex items-center gap-2.5">
       <div className="relative h-10 w-10 shrink-0">
         <Image
-          src="/cloud-stock-logo.png"
+          src="/cloud-stock-logo.PNG"
           alt="Cloud Stock"
           fill
           priority
@@ -182,7 +182,7 @@ function ProductPreview() {
             <div className="flex items-center gap-2">
               <div className="relative h-7 w-7">
                 <Image
-                  src="/cloud-stock-logo.png"
+                  src="/cloud-stock-logo.PNG"
                   alt=""
                   fill
                   className="object-contain"
