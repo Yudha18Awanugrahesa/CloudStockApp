@@ -106,9 +106,9 @@ export function ToastViewport() {
   return (
     <div
       className="
-        pointer-events-none fixed inset-x-0 top-3 z-[10050]
+        pointer-events-none fixed inset-x-0 top-[76px] z-[10050]
         flex flex-col items-center gap-2 px-3
-        sm:left-auto sm:right-5 sm:top-5 sm:w-[430px] sm:px-0
+        sm:left-auto sm:right-5 sm:top-[80px] sm:w-[430px] sm:px-0
       "
       aria-live="polite"
       aria-atomic="true"

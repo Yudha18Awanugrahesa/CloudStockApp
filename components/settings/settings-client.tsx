@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -12,10 +13,13 @@ import {
   Mail,
   ShieldCheck,
   UserRound,
+  Users,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { showToast } from "@/lib/toast";
+import { DataBackupClient } from "@/components/settings/data-backup-client";
+import { DataRestoreClient } from "@/components/settings/data-restore-client";
 
 type WorkspaceData = {
   id: string;
@@ -74,6 +78,9 @@ export function SettingsClient({
   const [savingProfile, setSavingProfile] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  const [permissions, setPermissions] = useState<Record<string, boolean>>({});
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
+
   const [showArchiveSalesModal, setShowArchiveSalesModal] = useState(false);
   const [archivingSales, setArchivingSales] = useState(false);
   const [archiveStartDate, setArchiveStartDate] = useState("");
@@ -83,8 +90,70 @@ export function SettingsClient({
     setWorkspaceName(initialWorkspace.name);
   }, [initialWorkspace.name]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPermissions() {
+      if (initialMembership.role?.toLowerCase() === "owner") {
+        if (!cancelled) {
+          setPermissionsLoading(false);
+        }
+        return;
+      }
+
+      setPermissionsLoading(true);
+
+      try {
+        const response = await fetch(
+          `/api/me/permissions?workspaceId=${encodeURIComponent(initialWorkspace.id)}`,
+          { cache: "no-store" },
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result?.message || "Gagal memuat permission.");
+        }
+
+        if (!cancelled) {
+          setPermissions(
+            result?.permissions && typeof result.permissions === "object"
+              ? result.permissions
+              : {},
+          );
+        }
+      } catch (error) {
+        console.error("Load settings permissions error:", error);
+
+        if (!cancelled) {
+          setPermissions({});
+        }
+      } finally {
+        if (!cancelled) {
+          setPermissionsLoading(false);
+        }
+      }
+    }
+
+    void loadPermissions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialMembership.role, initialWorkspace.id]);
+
   async function handleWorkspaceSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!isOwner) {
+      showToast({
+        type: "error",
+        title: "Akses ditolak",
+        message: "Hanya Owner workspace yang dapat mengubah nama workspace.",
+        duration: 6000,
+      });
+      return;
+    }
 
     const name = workspaceName.trim();
 
@@ -132,6 +201,17 @@ export function SettingsClient({
   async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (!isOwner) {
+      showToast({
+        type: "error",
+        title: "Akses ditolak",
+        message:
+          "Pengaturan profil pada halaman ini hanya dapat diubah oleh Owner.",
+        duration: 6000,
+      });
+      return;
+    }
+
     const name = profileName.trim();
 
     if (!name) {
@@ -177,11 +257,11 @@ export function SettingsClient({
   async function handleArchiveSales() {
     if (archivingSales) return;
 
-    if (!isOwner) {
+    if (!canArchive) {
       showToast({
         type: "error",
         title: "Akses ditolak",
-        message: "Hanya Owner workspace yang dapat melakukan tutup buku.",
+        message: "Anda belum memiliki permission untuk melakukan tutup buku.",
         duration: 6000,
       });
       return;
@@ -295,8 +375,17 @@ export function SettingsClient({
 
   const isOwner = initialMembership.role?.toLowerCase() === "owner";
 
+  const canBackup =
+    isOwner || (!permissionsLoading && permissions["data.backup"] === true);
+
+  const canRestore =
+    isOwner || (!permissionsLoading && permissions["data.restore"] === true);
+
+  const canArchive =
+    isOwner || (!permissionsLoading && permissions["data.archive"] === true);
+
   return (
-    <div className="-mt-1 mx-auto w-full max-w-5xl space-y-5 pb-6 sm:space-y-6 lg:-mt-2">
+    <div className="-mt-1 mx-auto w-full max-w-4xl space-y-4 pb-6 sm:space-y-5 lg:-mt-2">
       {/* PAGE INTRO */}
       <section className="lg:hidden">
         <div className="flex items-start gap-3">
@@ -322,7 +411,7 @@ export function SettingsClient({
 
       {/* WORKSPACE HERO */}
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="border-b border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/30 sm:p-5">
+        <div className="border-b border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/30">
           <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sm font-bold text-blue-600 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/20">
@@ -347,7 +436,7 @@ export function SettingsClient({
           </div>
         </div>
 
-        <form onSubmit={handleWorkspaceSubmit} className="p-4 sm:p-5">
+        <form onSubmit={handleWorkspaceSubmit} className="p-4">
           <label
             htmlFor="workspace-name"
             className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-200"
@@ -362,7 +451,8 @@ export function SettingsClient({
                 value={workspaceName}
                 onChange={(event) => setWorkspaceName(event.target.value)}
                 maxLength={80}
-                disabled={savingWorkspace}
+                disabled={!isOwner || savingWorkspace}
+                readOnly={!isOwner}
                 placeholder="Contoh: Toko Saya"
                 className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
               />
@@ -370,11 +460,17 @@ export function SettingsClient({
               <p className="mt-1.5 text-xs text-slate-400">
                 Nama ini digunakan sebagai identitas bisnis/workspace Anda.
               </p>
+
+              {!isOwner && (
+                <p className="mt-2 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                  Hanya Owner yang dapat mengubah nama workspace.
+                </p>
+              )}
             </div>
 
             <button
               type="submit"
-              disabled={savingWorkspace}
+              disabled={!isOwner || savingWorkspace}
               className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:w-auto md:min-w-[170px]"
             >
               {savingWorkspace ? "Menyimpan..." : "Simpan Perubahan"}
@@ -384,10 +480,10 @@ export function SettingsClient({
       </section>
 
       {/* ACCOUNT GRID */}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.75fr)]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.75fr)]">
         {/* PROFILE */}
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="border-b border-slate-100 p-4 dark:border-slate-800 sm:p-5">
+          <div className="border-b border-slate-100 p-4 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
                 <UserRound className="h-5 w-5" />
@@ -405,7 +501,7 @@ export function SettingsClient({
             </div>
           </div>
 
-          <form onSubmit={handleProfileSubmit} className="space-y-4 p-4 sm:p-5">
+          <form onSubmit={handleProfileSubmit} className="space-y-3 p-4">
             <div>
               <label
                 htmlFor="profile-name"
@@ -424,7 +520,8 @@ export function SettingsClient({
                   value={profileName}
                   onChange={(event) => setProfileName(event.target.value)}
                   maxLength={80}
-                  disabled={savingProfile}
+                  disabled={!isOwner || savingProfile}
+                  readOnly={!isOwner}
                   placeholder="Nama pengguna"
                   className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
                 />
@@ -453,12 +550,19 @@ export function SettingsClient({
               <p className="mt-1.5 text-xs text-slate-400">
                 Email login tidak diubah dari halaman ini.
               </p>
+
+              {!isOwner && (
+                <p className="mt-2 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                  Pengaturan akun di halaman ini bersifat read-only untuk
+                  Member.
+                </p>
+              )}
             </div>
 
             <div className="flex justify-end border-t border-slate-100 pt-4 dark:border-slate-800">
               <button
                 type="submit"
-                disabled={savingProfile}
+                disabled={!isOwner || savingProfile}
                 className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 {savingProfile ? "Menyimpan..." : "Simpan Profil"}
@@ -487,7 +591,7 @@ export function SettingsClient({
             </div>
           </div>
 
-          <div className="space-y-3 p-4 sm:p-5">
+          <div className="space-y-2.5 p-4">
             <div className="rounded-xl border border-slate-200 p-3.5 dark:border-slate-800">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -538,9 +642,63 @@ export function SettingsClient({
         </section>
       </div>
 
+      {/* MEMBER MANAGEMENT */}
+      {isOwner && (
+        <section className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm dark:border-blue-500/20 dark:bg-slate-900">
+          <div className="border-b border-blue-100 bg-blue-50/60 p-4 dark:border-blue-500/10 dark:bg-blue-500/5 sm:p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+                <Users className="h-5 w-5" />
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold text-slate-950 dark:text-white sm:text-base">
+                  Manajemen Anggota
+                </h2>
+
+                <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                  Kelola anggota workspace dan atur permission sesuai kebutuhan
+                  pekerjaan.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 sm:p-5">
+            <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/30 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-blue-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-blue-400 dark:ring-slate-700">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    Akses & Permission
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    Atur fitur yang dapat digunakan oleh setiap Member
+                    workspace.
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                href="/settings/members"
+                className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
+              >
+                <Users className="h-4 w-4" />
+                Kelola Anggota
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* DATA MANAGEMENT */}
       <section className="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm dark:border-amber-500/20 dark:bg-slate-900">
-        <div className="border-b border-amber-100 bg-amber-50/60 p-4 dark:border-amber-500/10 dark:bg-amber-500/5 sm:p-5">
+        <div className="border-b border-amber-100 bg-amber-50/60 p-4 dark:border-amber-500/10 dark:bg-amber-500/5">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
               <Database className="h-5 w-5" />
@@ -555,11 +713,27 @@ export function SettingsClient({
                 Kelola dan arsipkan data operasional transaksi pada workspace
                 ini.
               </p>
+
+              {permissionsLoading && !isOwner && (
+                <p className="mt-2 text-[11px] font-medium text-slate-400">
+                  Memuat permission akun...
+                </p>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="p-4 sm:p-5">
+        <div className="p-4">
+          <DataBackupClient
+            canBackup={canBackup}
+            workspaceId={initialWorkspace.id}
+          />
+
+          <DataRestoreClient
+            canRestore={canRestore}
+            workspaceId={initialWorkspace.id}
+          />
+
           <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-500/20 dark:bg-amber-500/5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex min-w-0 items-start gap-3">
@@ -577,9 +751,9 @@ export function SettingsClient({
                     mengubah stok bahan baku.
                   </p>
 
-                  {!isOwner && (
+                  {!canArchive && !permissionsLoading && (
                     <p className="mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                      Hanya Owner workspace yang dapat menggunakan fitur ini.
+                      Permission Tutup Buku belum diberikan untuk akun ini.
                     </p>
                   )}
                 </div>
@@ -588,7 +762,7 @@ export function SettingsClient({
               <button
                 type="button"
                 onClick={() => setShowArchiveSalesModal(true)}
-                disabled={!isOwner || archivingSales}
+                disabled={!canArchive || archivingSales}
                 className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 lg:w-auto"
               >
                 <Archive className="h-4 w-4" />
@@ -610,7 +784,7 @@ export function SettingsClient({
                   type="date"
                   value={archiveStartDate}
                   onChange={(event) => setArchiveStartDate(event.target.value)}
-                  disabled={!isOwner || archivingSales}
+                  disabled={!canArchive || archivingSales}
                   className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
                 />
               </div>
@@ -629,7 +803,7 @@ export function SettingsClient({
                   value={archiveEndDate}
                   min={archiveStartDate || undefined}
                   onChange={(event) => setArchiveEndDate(event.target.value)}
-                  disabled={!isOwner || archivingSales}
+                  disabled={!canArchive || archivingSales}
                   className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-900"
                 />
               </div>
